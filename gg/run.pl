@@ -44,7 +44,14 @@ run :-
     accessLevel: public,
     avatar: 'avatar.png',
     description: "Nederland telt bijna 400 gemeenten.  In 1812 waren dat er meer dan 1100.  In twee eeuwen vol herindelingen, annexaties en fusies heeft Nederland bijna 1700 gemeenten gekend.  De data van gemeentegeschiedenis is gebouwd op twee datasets: het Repertorium van Nederlandse gemeenten vanaf 1812 van Ad van der Meer en Onno Boonstra en de bij DANS gedeponeerde NLGis shapefiles van Onno Boonstra, waarin van elk jaar van 1812 tot 1997 de gemeentegrenzen zijn vastgelegd.",
-    exampleResources: [municipality-'Almenum'],
+    exampleResources: [
+      municipality-'Almenum',
+      municipality-'Amsterdam',
+      municipality-'Roermond',
+      municipality-'Swalmen',
+      municipality-'Lelystad',
+      municipality-'Middelstum'
+    ],
     files: ['data.nq.gz','meta.trig.gz'],
     prefixes: [
       bnode,

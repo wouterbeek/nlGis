@@ -105,6 +105,9 @@ deref_triple(S, P, O0) :-
   (   O0 = literal(type(D,Lex0))
   ->  atom_strip(Lex0, Lex),
       O = literal(type(D,Lex))
+  ;   O0 = literal(lang(LTag,Lex0))
+  ->  atom_strip(Lex0, Lex),
+      O = literal(lang(LTag,Lex))
   ;   O = O0
   ),
   rdf_assert(S, P, O, graph:data).

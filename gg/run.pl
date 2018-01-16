@@ -85,10 +85,10 @@ deref_instance(S) :-
   rdf_deref_uri(
     S,
     deref_triples,
-    [bnode_prefix(BNodePrefix),format(media(application/'rdf+xml',[]))]
+    [bnode_prefix(BNodePrefix),media_type(media(application/'rdf+xml',[]))]
   ).
 
-deref_triples(Triples, _) :-
+deref_triples(_, Triples, _) :-
   maplist(deref_triple, Triples).
 
 deref_triple(Triple) :-

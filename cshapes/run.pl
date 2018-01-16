@@ -100,7 +100,16 @@ run(In1) :-
     avatar: 'avatar.png',
     binary_files: ['data.txt','vocab.svg'],
     description: "The countries of the world, from 1920 untill today.  This dataset includes state boundaries and capitals and is coded according to the Correlates of War and the Gleditsch and Ward (1999) state lists.",
-    exampleResources: [resource-'country/Guyana/1966'],
+    exampleResources: [
+      country-'Netherlands/1946',
+      country-'Germany-Democratic-Republic/1954',
+      country-'Germany-Federal-Republic/1955',
+      country-'Germany/1990',
+      country-'India/1947',
+      country-'India/1949',
+      country-'Chad/1960',
+      country-'Chad/1973'
+    ],
     files: ['data.nq.gz','meta.trig.gz','vocab.trig.gz'],
     prefixes: [
       bnode,

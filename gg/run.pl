@@ -3,24 +3,33 @@
 /** <module> Gemeentegeschiedenis
 
 @author Wouter Beek
-@version 2017/04-2017/12
+@version 2017-2018
 */
 
 :- use_module(library(apply)).
-:- use_module(library(atom_ext)).
-:- use_module(library(semweb/rdf_api)).
-:- use_module(library(semweb/rdf_export)).
-:- use_module(library(tapir)).
+:- use_module(library(settings)).
 :- use_module(library(zlib)).
+
+:- use_module(library(atom_ext)).
+:- use_module(library(sw/rdf_clean)).
+:- use_module(library(sw/rdf_deref)).
+:- use_module(library(sw/rdf_export)).
+:- use_module(library(sw/rdf_mem)).
+:- use_module(library(sw/rdf_prefix)).
+:- use_module(library(sw/rdf_term)).
+:- use_module(library(tapir)).
 
 :- thread_local
      visited/1.
 
-:- maplist(rdf_create_prefix, [
-     bnode-'https://iisg.amsterdam/.well-known/genid/',
+:- maplist(rdf_assert_prefix, [
      graph-'http://www.gemeentegeschiedenis.nl/graph/',
-     resource-'http://www.gemeentegeschiedenis.nl/'
+     resource-'http://www.gemeentegeschiedenis.nl/',
+     skos
    ]).
+
+:- set_setting(rdf_term:bnode_prefix_authority, 'www.gemeentegeschiedenis.nl').
+:- set_setting(rdf_term:bnode_prefix_scheme, https).
 
 run :-
   % www → .nq.gz
@@ -35,11 +44,15 @@ run :-
   ),
   setup_call_cleanup(
     gzopen('data.nq.gz', write, Out),
-    rdf_save2(Out),
+    forall(
+      rdf_triple(S, P, O, G),
+      rdf_write_quad(Out, S, P, O, G)
+    ),
     close(Out)
   ),
 
   % upload to Triply
+  rdf_bnode_iri(BNodePrefix),
   Properties = _{
     accessLevel: public,
     avatar: 'avatar.png',
@@ -54,14 +67,14 @@ run :-
     ],
     files: ['data.nq.gz','meta.trig.gz'],
     prefixes: [
-      bnode,
+      bnode-BNodePrefix,
       amco-'http://www.gemeentegeschiedenis.nl/amco/',
       cbs-'http://www.gemeentegeschiedenis.nl/cbscode/',
       departement-'http://www.gemeentegeschiedenis.nl/departement/',
       'GeoNames'-'http://sws.geonames.org/',
       graph,
       municipality-'http://www.gemeentegeschiedenis.nl/gemeentenaam/',
-      'nl.dbr',
+      'nl.dbr'-'http://nl.dbpedia.org/resource/',
       'nl.wiki'-'https://nl.wikipedia.org/wiki/',
       province-'http://www.gemeentegeschiedenis.nl/provincie/',
       vocab-'http://www.gemeentegeschiedenis.nl/gg-schema#'
@@ -81,24 +94,19 @@ deref_instance(S) :-
   visited(S), !.
 deref_instance(S) :-
   assert(visited(S)),
-  rdf_prefix_iri(bnode, BNodePrefix),
-  rdf_deref_uri(
-    S,
-    deref_triples,
-    [bnode_prefix(BNodePrefix),media_type(media(application/'rdf+xml',[]))]
-  ).
+  rdf_deref_uri(S, deref_triples, [media_type(media(application/'rdf+xml',[]))]).
 
-deref_triples(_, Triples, _) :-
-  maplist(deref_triple, Triples).
+deref_triples(BNodePrefix, Triples, _) :-
+  maplist(deref_triple(BNodePrefix), Triples).
 
-deref_triple(Triple) :-
-  rdf_clean_triple(Triple, rdf(S,P,O)),
+deref_triple(BNodePrefix, Triple) :-
+  rdf_clean_triple(BNodePrefix, Triple, rdf(S,P,O)),
   deref_triple(S, P, O).
 
 % Assert + dereference
 deref_triple(S, P, O) :-
   rdf_prefix_memberchk(P, [skos:broader,skos:narrower]), !,
-  rdf_assert(S, P, O, graph:data),
+  rdf_assert_triple(S, P, O, graph:data),
   deref_instance(O).
 % Assert
 deref_triple(S, P, O0) :-
@@ -110,4 +118,4 @@ deref_triple(S, P, O0) :-
       O = literal(lang(LTag,Lex))
   ;   O = O0
   ),
-  rdf_assert(S, P, O, graph:data).
+  rdf_assert_triple(S, P, O, graph:data).

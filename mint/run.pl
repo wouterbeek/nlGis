@@ -27,8 +27,8 @@
 :- use_module(library(tapir)).
 
 :- rdf_meta
-   authority(+, r, +),
-   house(+, r, r, +).
+   authority(r, +),
+   house(r, r, +).
 
 :- maplist(rdf_assert_prefix, [
      graph-'https://iisg.amsterdam/graph/mint/',
@@ -40,16 +40,14 @@
 :- set_setting(rdf_term:bnode_prefix_scheme, https).
 
 run :-
-  Doc = 'https://datasets.socialhistory.org/dataverse/lowcountries_GIS',
-  
   % convert authorities
   file_features('authorities.geojson.gz', Features1),
-  maplist(authority(Doc, graph:authorities), Features1),
+  maplist(authority(graph:authorities), Features1),
 
   % Convert houses: this _must_ be done after converting the
   % authorities.
   file_features('houses.geojson.gz', Features2),
-  maplist(house(Doc, graph:authorities, graph:houses), Features2),
+  maplist(house(graph:authorities, graph:houses), Features2),
 
   % .geojson → .nq.gz
   setup_call_cleanup(
@@ -70,7 +68,7 @@ run :-
   ),
 
   % upload to Triply
-  rdf_bnode_iri(BNodePrefix),
+  rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
     avatar: 'avatar.jpg',
@@ -102,7 +100,7 @@ file_features(File, Features) :-
   ),
   _{features: Features} :< Dict.
 
-authority(Doc, G1, Feature) :-
+authority(G1, Feature) :-
   _{properties: Properties} :< Feature,
   % vocab:Authority
   rdf_create_iri(resource, [authority,Properties.'AUTHORITY'], Authority),
@@ -113,7 +111,7 @@ authority(Doc, G1, Feature) :-
   % vocab:Authority geo:hasGeometry geo:Geometry
   _{geometry: Geometry1} :< Feature,
   (   Geometry1 == null
-  ->  rdf_bnode_iri(Doc, _, Geometry2),
+  ->  rdf_bnode_iri(Geometry2),
       rdf_assert_triple(Authority, geo:hasGeometry, Geometry2, G1)
   ;   _{coordinates: Coords, type: Type} :< Geometry1,
       Shape =.. [Type,Coords],
@@ -127,7 +125,7 @@ authority(Doc, G1, Feature) :-
   date(Properties.'DATEto', End),
   rdf_assert_triple(Geometry2, vocab:end, End, G1).
 
-house(Doc, G1, G2, Feature) :-
+house(G1, G2, Feature) :-
   _{properties: Properties} :< Feature,
   % vocab:House
   rdf_create_iri(resource, [house,Properties.'MINT'], House),
@@ -159,7 +157,7 @@ house(Doc, G1, G2, Feature) :-
   % vocab:House geo:hasGeometry geo:Geometry
   _{geometry: Geometry1} :< Feature,
   (   Geometry1 == null
-  ->  rdf_bnode_iri(Doc, _, Geometry2),
+  ->  rdf_bnode_iri(Geometry2),
       rdf_assert_triple(House, geo:hasGeometry, Geometry2, G2)
   ;   _{coordinates:Coords, type:Type} :< Geometry1,
       Shape =.. [Type,Coords],

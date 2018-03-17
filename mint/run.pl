@@ -59,10 +59,10 @@ run :-
     close(Out)
   ),
 
-  % .trig.gz → .svg
+  % .trig → .svg
   rdf_equal(graph:vocab, G),
   setup_call_cleanup(
-    rdf_load_file('vocab.trig.gz', [graph(DefG)]),
+    rdf_load_file('vocab.trig', [graph(DefG)]),
     gv_export(dot, svg, 'vocab.svg', {G}/[Out]>>shacl_export(Out, G)),
     maplist(rdf_retract_graph, [DefG,G])
   ),
@@ -75,7 +75,7 @@ run :-
     binary_files: ['mint.mp4','vocab.svg'],
     description: "Polygons of the major coin issueing authorities that existed in the Low Countries between the 6th and the 21st centuries.  This dataset also includes points for the mint houses responsible for the production of coins.",
     exampleResources: [authority-'Mechelen',house-'Maaseik'],
-    files: ['data.nq.gz','meta.trig.gz','vocab.trig.gz'],
+    files: ['data.nq.gz','meta.trig','vocab.trig'],
     prefixes: [
       bnode-BNodePrefix,
       authority-'https://iisg.amsterdam/resource/authority/',
@@ -181,8 +181,4 @@ date(date(Y,M,D)) -->
 date(Atom, O) :-
   once(atom_phrase(date(Date), Atom)),
   Date = date(Y,M,D),
-  (   ((M =:= 1, D =:= 1) ; (M =:= 12, D =:=31))
-  ->  atom_number(Lex, Y),
-      rdf_typed_literal(xsd:gYear, Lex, O)
-  ;   O = Date
-  ).
+  (((M =:= 1, D =:= 1) ; (M =:= 12, D =:=31)) -> O = year(Y) ; O = Date).

@@ -65,7 +65,7 @@ run :-
       municipality-'Lelystad',
       municipality-'Middelstum'
     ],
-    files: ['data.nq.gz','meta.trig.gz'],
+    files: ['data.nq.gz','meta.trig'],
     prefixes: [
       bnode-BNodePrefix,
       amco-'http://www.gemeentegeschiedenis.nl/amco/',

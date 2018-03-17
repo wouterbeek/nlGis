@@ -1,0 +1,302 @@
+prefix graph: <https://iisg.amsterdam/graph/strikes/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix vocab: <https://iisg.amsterdam/vocab/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:vocab {
+
+  # ActionType
+
+  vocab:ActionType a owl:Class ;
+    owl:oneOf ( vocab:nothing vocab:other vocab:lockout vocab:strike ) ;
+    rdfs:label "action type"@en-gb , "aktie type"@nl-nl .
+
+  vocab:strike a vocab:ActionType ;
+    rdfs:label "strike"@en-gb , "staking"@nl-nl .
+
+  vocab:other a vocab:ActionType ;
+    rdfs:label "other action due to labour disputes"@en-gb .
+
+  vocab:lockout a vocab:ActionType ;
+    rdfs:label "lockout"@en-gb .
+
+  vocab:nothing a vocab:ActionType ;
+    rdfs:label "nothing happened"@en-gb .
+
+  vocab:ActionTypeShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:property [
+      sh:path rdfs:label ;
+      sh:datatype rdf:langString ;
+    ] ;
+    sh:targetClass vocab:ActionType .
+
+
+
+  # Character
+
+  vocab:Character a owl:Class ;
+    owl:oneOf ( vocab:union vocab:wildcat ) ;
+    rdfs:label "character"@en-gb , "karakter"@nl-nl .
+
+  vocab:union a vocab:Character ;
+    rdfs:label "union"@en-gb , "vakbond"@nl-nl .
+
+  vocab:wildcat a vocab:Character ;
+    rdfs:label "wildcat"@en-gb .
+
+  vocab:CharacterShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:property [
+      sh:path rdfs:label ;
+      sh:datatype rdf:langString ;
+    ] ;
+    sh:targetClass vocab:Character .
+
+
+
+  # Result
+
+  vocab:Result a owl:Class ;
+    owl:oneOf ( vocab:lost vocab:settled vocab:undecided vocab:victory ) ;
+    rdfs:label "result"@en-gb , "resultaat"@nl-nl .
+
+  vocab:lost a vocab:Result ;
+    rdfs:label "lost"@en-gb , "verloren"@nl-nl .
+
+  vocab:settled a vocab:Result ;
+    rdfs:label "settled"@en-gb , "verrekend"@nl-nl .
+
+  vocab:undecided a vocab:Result ;
+    rdfs:label "undecided"@en-gb , "onbeslist"@nl-nl .
+
+  vocab:victory a vocab:Result ;
+    rdfs:label "victory"@en-gb , "overwinning"@nl-nl .
+
+  vocab:ResultShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:property [
+      sh:path rdfs:label ;
+      sh:datatype rdf:langString ;
+    ] ;
+    sh:targetClass vocab:Result .
+
+
+
+  # Strike
+
+  vocab:Strike
+    rdfs:label "strike"@en-gb , "staking"@nl-nl .
+
+  vocab:StrikeShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:path vocab:action ;
+      sh:class vocab:ActionType ;
+    ] ;
+    sh:property [
+      sh:path vocab:character ;
+      sh:class vocab:Character ;
+    ] ;
+    sh:property [
+      sh:path vocab:company ;
+      sh:class vocab:Company ;
+    ] ;
+    sh:property [
+      sh:path vocab:date ;
+      sh:or ( [ sh:datatype xsd:date ]
+              [ sh:datatype xsd:gYear ]
+              [ sh:datatype xsd:gYearMonth ] ) ;
+    ] ;
+    sh:property [
+      sh:path vocab:duration ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:id ;
+      sh:datatype xsd:string ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-actions ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-campaigners ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-companies ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-days ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-days-indirect-strikers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-days-locked-out-workers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-indirect-strikers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-laid-off-workers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-locked-out-workers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:number-of-workers ;
+      sh:datatype xsd:nonNegativeInteger ;
+    ] ;
+    sh:property [
+      sh:path vocab:occupation ;
+      sh:class vocab:Occupation ;
+    ] ;
+    sh:property [
+      sh:path vocab:place ;
+      sh:class vocab:Place ;
+    ] ;
+    sh:property [
+      sh:path vocab:province ;
+      sh:class vocab:Province ;
+    ] ;
+    sh:property [
+      sh:path vocab:sector ;
+      sh:class vocab:Sector ;
+    ] ;
+    sh:property [
+      sh:path vocab:specification-of-action ;
+      sh:datatype rdf:langString ;
+    ] ;
+    sh:property [
+      sh:path vocab:type-of-strike ;
+      sh:datatype xsd:string ;
+    ] ;
+    sh:targetClass vocab:Strike .
+
+  vocab:action-type
+    rdfs:domain vocab:Strike ;
+    rdfs:label "has action type"@en-gb , "heeft aktie type"@nl-nl ;
+    rdfs:range vocab:ActionType .
+
+  vocab:character
+    rdfs:domain vocab:Strike ;
+    rdfs:label "has character"@en-gb , "heeft karakter"@nl-nl ;
+    rdfs:range vocab:Character .
+
+  vocab:company
+    rdfs:domain vocab:Strike ;
+    rdfs:label "company"@en-gb , "bedrijf"@nl-nl ;
+    rdfs:range vocab:Company .
+
+  vocab:date
+    rdfs:domain vocab:Strike ;
+    rdfs:label "start"@en-gb , "begin"@nl-nl ;
+    rdfs:range [ owl:unionOf ( xsd:date xsd:gYear xsd:gYearMonth ) ] .
+
+  vocab:duration
+    rdfs:domain vocab:Strike ;
+    rdfs:label "duur (in dagen)"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:id
+    rdfs:domain vocab:Strike ;
+    rdfs:label "identifier"@nl-nl ;
+    rdfs:range xsd:string .
+
+  vocab:number-of-actions
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of actions"@en-gb , "aantal acties"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-campaigners
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of organizers"@en-gb , "aantal organizatoren"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-companies
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of companies"@en-gb , "aantal bedrijven"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-days
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of days"@en-gb , "aantal dagen"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-days-indirect-strikers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "aantal door indirecte stakers gestaakte dagen"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-days-locked-out-workers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "aantal door uitgesloten werknemers gestaakte dagen"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-indirect-strikers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of indirect strikers"@en-gb ,
+               "aantal indirecte stakers"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-laid-off-workers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of laid off workers"@en-gb ,
+               "aantal ontslagen werknemers"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-locked-out-workers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of locked out workers"@en-gb ,
+               "aantal uitgesloten werknemers"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:number-of-workers
+    rdfs:domain vocab:Strike ;
+    rdfs:label "number of employees"@en-gb , "aantal werknemers"@nl-nl ;
+    rdfs:range xsd:nonNegativeInteger .
+
+  vocab:occupation
+    rdfs:domain vocab:Strike ;
+    rdfs:label "beroep"@nl-nl ;
+    rdfs:range vocab:Occupation .
+
+  vocab:place
+    rdfs:domain vocab:Strike ;
+    rdfs:label "place"@en-gb , "plaats"@nl-nl ;
+    rdfs:range vocab:Place .
+
+  vocab:province
+    rdfs:domain vocab:Strike ;
+    rdfs:label "province"@en-gb , "provincie"@nl-nl ;
+    rdfs:range vocab:Province .
+
+  vocab:sector
+    rdfs:domain vocab:Strike ;
+    rdfs:label "sector"@en-gb , "sector"@nl-nl ;
+    rdfs:range vocab:Sector .
+
+  vocab:specification-of-action
+    rdfs:domain vocab:Strike ;
+    rdfs:label "specification of action"@en-gb ;
+    rdfs:range rdf:langString .
+
+  vocab:type-of-strike
+    rdfs:domain vocab:Strike ;
+    rdfs:label "kind of strike"@en-gb , "type staking"@nl-nl ;
+    rdfs:range xsd:string .
+
+}

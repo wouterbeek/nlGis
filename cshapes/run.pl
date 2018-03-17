@@ -9,6 +9,7 @@
 :- use_module(library(apply)).
 :- use_module(library(archive)).
 :- use_module(library(process)).
+:- use_module(library(settings)).
 :- use_module(library(sgml)).
 :- use_module(library(uri)).
 :- use_module(library(xpath)).
@@ -30,13 +31,15 @@
 :- use_module(library(xml_ext)).
 
 :- maplist(rdf_assert_prefix, [
-     bnode-'https://iisg.amsterdam/.well-known/genid/',
      geo,
      graph-'https://iisg.amsterdam/graph/cshapes/',
      resource-'https://iisg.amsterdam/resource/',
      vocab-'https://iisg.amsterdam/vocab/',
      'wgs84'
    ]).
+
+:- set_setting(rdf_term:bnode_prefix_authority, 'iisg.amsterdam').
+:- set_setting(rdf_term:bnode_prefix_scheme, https).
 
 run :-
   % Obtain the download URI.
@@ -93,16 +96,17 @@ run(In1) :-
     close(Out)
   ),
 
-  % .trig.gz → .svg
+  % .trig → .svg
   rdf_equal(VocabG, graph:vocab),
   setup_call_cleanup(
-    rdf_load_file('vocab.trig.gz', [graph(DefG)]),
+    rdf_load_file('vocab.trig', [graph(DefG)]),
     gv_export(dot, svg, 'vocab.svg', {VocabG}/[Out]>>shacl_export(Out, VocabG)),
     maplist(rdf_retract_graph, [DefG,VocabG])
   ),
 
   % upload to Triply
   rename_file('cshapes_shapefile_documentation.txt', 'data.txt'),
+  rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
     avatar: 'avatar.png',
@@ -118,9 +122,9 @@ run(In1) :-
       country-'Chad/1960',
       country-'Chad/1973'
     ],
-    files: ['data.nq.gz','meta.trig.gz','vocab.trig.gz'],
+    files: ['data.nq.gz','meta.trig','vocab.trig'],
     prefixes: [
-      bnode,
+      bnode-BNodePrefix,
       capital-'https://iisg.amsterdam/resource/capital/',
       country-'https://iisg.amsterdam/resource/country/',
       dataset-'https://iisg.amsterdam/dataset/',
@@ -162,8 +166,7 @@ cshapes_record_(G, Dom) :-
   rdf_create_iri(resource, [country,CountryLocal], Country),
   rdf_assert_triple(Country, rdf:type, vocab:'Country', G),
   % vocab:Country rdfs:label rdf:langString
-  atom_string(CountryName, CountryNameStr),
-  rdf_assert_triple(Country, rdfs:label, CountryNameStr-'en-gb', G),
+  rdf_assert_triple(Country, rdfs:label, CountryName-'en-gb', G),
   % vocab:CountrySlice
   (   xpath_chk(Dom, //'ogr:COWSYEAR'(normalize_space), Y1),
       Y1 \== '-1'
@@ -214,13 +217,11 @@ cshapes_record_(G, Dom) :-
   xpath_chk(Dom, //'ogr:CAPLAT'(number), CapitalLat),
   rdf_assert_wkt(Capital, 'Point'([CapitalLong,CapitalLat]), G),
   % vocab:Capital rdfs:label rdf:langString
-  atom_string(CapitalName, CapitalNameStr),
-  rdf_assert_triple(Capital, rdfs:label, CapitalNameStr-'en-gb', G),
+  rdf_assert_triple(Capital, rdfs:label, CapitalName-'en-gb', G),
   % vocab:CountrySlice vocab:cowCode xsd:string
   (   xpath_chk(Dom, //'ogr:COWCODE'(normalize_space), CowCode),
       CowCode \== '-1'
-  ->  atom_string(CowCode, CowCodeStr),
-      rdf_assert_triple(CountrySlice, vocab:cowCode, CowCodeStr, G)
+  ->  rdf_assert_triple(CountrySlice, vocab:cowCode, str(CowCode), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:cowStart xsd:date
@@ -255,34 +256,30 @@ cshapes_record_(G, Dom) :-
   rdf_assert_triple(CountrySlice, vocab:capital, Capital, G),
   % vocab:CountrySlice vocab:gwCode xsd:string
   (   xpath_chk(Dom, //'ogr:GWCODE'(normalize_space), GwCode),
-      GwCode \== "-1"
-  ->  atom_string(GwCode, GwCodeStr),
-      rdf_assert_triple(CountrySlice, vocab:gwCode, GwCodeStr, G)
+      GwCode \== '-1'
+  ->  rdf_assert_triple(CountrySlice, vocab:gwCode, str(GwCode), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoAlpha2 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL2'(normalize_space), IsoAlpha2)
-  ->  atom_string(IsoAlpha2, IsoAlpha2Str),
-      rdf_assert_triple(CountrySlice, vocab:isoAlpha2, IsoAlpha2Str, G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha2, str(IsoAlpha2), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoAlpha3 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL3'(normalize_space), IsoAlpha3)
-  ->  atom_string(IsoAlpha3, IsoAlpha3Str),
-      rdf_assert_triple(CountrySlice, vocab:isoAlpha3, IsoAlpha3Str, G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha3, str(IsoAlpha3), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoName rdf:langString
   (   xpath_chk(Dom, //'ogr:ISONAME'(normalize_space), IsoName)
-  ->  atom_string(IsoName, IsoNameStr),
-      rdf_assert_triple(CountrySlice, vocab:isoName, IsoNameStr-'en-gb', G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoName, IsoName-'en-gb', G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoNumber xsd:positiveInteger
   (   xpath_chk(Dom, //'ogr:ISO1NUM'(normalize_space), IsoNumberAtom),
       atom_number(IsoNumberAtom, IsoNumber),
       IsoNumber > 0
-  ->  rdf_assert_triple(CountrySlice, vocab:isoNumber, literal(type(xsd:positiveInteger,IsoNumberAtom)), G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoNumber, positive_integer(IsoNumber), G)
   ;   true
   ).
 

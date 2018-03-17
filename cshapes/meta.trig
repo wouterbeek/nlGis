@@ -1,0 +1,26 @@
+prefix dataset: <https://iisg.amsterdam/dataset/>
+prefix dc: <http://purl.org/dc/elements/1.1/>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix graph: <https://iisg.amsterdam/graph/cshapes/>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix void: <http://rdfs.org/ns/void#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:meta {
+
+  dataset:cshapes a void:Dataset ;
+    dc:created "2016-11-30"^^xsd:date ;
+    dc:creator "Nils B. Weidmann"^^xsd:string ;
+    dc:description "CShapes is a dataset that provides historical maps of state boundaries and capitals in the post-World War II period. The dataset is coded according to both the Correlates of War and the Gleditsch and Ward (1999) state lists, and is therefore compatible with a great number of existing databases in the discipline. Provided in a geographic data format, CShapes can be used directly with standard GIS software, allowing a wide range of spatial computations. In addition, we supply a CShapes package for the R statistical toolkit. This package enables researchers without GIS skills to perform various useful operations on the GIS maps."@en-gb ;
+    dc:license "http://creativecommons.org/licenses/by-nc-sa/4.0/"^^xsd:anyURI ;
+    foaf:page "http://nils.weidmann.ws/projects/cshapes.html"^^xsd:anyURI ;
+    rdfs:label "CShapes"@en-gb ;
+    void:subset graph:data , graph:meta , graph:vocab .
+
+  graph:data rdfs:label "data"@en-gb .
+
+  graph:meta rdfs:label "metadata"@en-gb .
+
+  graph:vocab rdfs:label "vocabulary"@en-gb .
+
+}

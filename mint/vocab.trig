@@ -1,0 +1,140 @@
+prefix geo: <http://www.opengis.net/ont/geosparql#>
+prefix graph: <https://iisg.amsterdam/graph/mint/>
+prefix owl: <http://www.w3.org/2002/07/owl#>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix vocab: <https://iisg.amsterdam/vocab/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:vocab {
+
+  # Alloy
+
+  vocab:Alloy a owl:Class ;
+    owl:oneOf ( vocab:copper vocab:silver ) ;
+    rdfs:label "alloy"@en-gb , "legering"@nl-nl .
+
+  vocab:copper a vocab:Alloy ;
+    rdfs:label "copper"@en-gb , "koper"@nl-nl .
+
+  vocab:silver a vocab:Alloy ;
+    rdfs:label "silver"@en-gb , "zilver"@nl-nl .
+
+  sh:AlloyShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:property [
+      sh:path rdfs:label ;
+      sh:datatype rdf:langString ;
+    ] ;
+    sh:targetClass vocab:Alloy .
+
+
+
+  # Authority
+
+  vocab:Authority
+    rdfs:label "mint authority"@en-gb , "munt autoriteit"@nl-nl ;
+    rdfs:subClassOf geo:Feature .
+
+  sh:AuthorityShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:class geo:Geometry ;
+      sh:minCount 1 ;
+      sh:nodeKind sh:IRI ;
+      sh:path geo:hasGeometry ;
+    ] ;
+    sh:property [
+      sh:datatype rdf:langString ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:path rdfs:label ;
+    ] ;
+    sh:targetClass vocab:Authority .
+
+
+  sh:GeometryShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:datatype geo:wktLiteral ;
+      sh:maxCount 1 ;
+      sh:path geo:asWKT ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:gYear ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:path vocab:begin ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:gYear ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:path vocab:end ;
+    ] ;
+    sh:targetClass geo:Geometry .
+
+
+  vocab:House
+    rdfs:label "mint house"@en-gb , "munthuis"@nl-nl ;
+    rdfs:subClassOf geo:Feature .
+
+  sh:HouseShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:class geo:Geometry ;
+      sh:nodeKind sh:IRI ;
+      sh:path geo:hasGeometry ;
+    ] ;
+    sh:property [
+      sh:class vocab:Alloy ;
+      sh:maxCount 1 ;
+      sh:nodeKind sh:IRI ;
+      sh:path vocab:alloy ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:string ;
+      sh:path vocab:source ;
+    ] ;
+    sh:property [
+      sh:datatype rdf:langString ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:path rdfs:label ;
+    ] ;
+    sh:targetClass vocab:House .
+
+
+
+  # Properties
+
+  vocab:alloy
+    rdfs:domain vocab:House ;
+    rdfs:label "alloy"@en-gb , "legering"@nl-nl ;
+    rdfs:range vocab:Alloy .
+
+  vocab:authority
+    rdfs:domain vocab:House ;
+    rdfs:label "has authority"@en-gb , "heeft autoriteit"@nl-nl ;
+    rdfs:range vocab:Authority .
+
+  vocab:begin
+    rdfs:domain geo:Geometry ;
+    rdfs:label "start date"@en-gb , "begin datum"@nl-nl ;
+    rdfs:range xsd:date .
+
+  vocab:end
+    rdfs:domain geo:Geometry ;
+    rdfs:label "end date"@en-gb , "eind datum"@nl-nl ;
+    rdfs:range xsd:date .
+
+  vocab:source
+    rdfs:domain vocab:House ;
+    rdfs:label "source"@en-gb , "bron"@nl-nl ;
+    rdfs:range rdf:langString .
+
+}

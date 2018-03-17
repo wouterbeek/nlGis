@@ -1,0 +1,273 @@
+prefix geo: <http://www.opengis.net/ont/geosparql#>
+prefix graph: <https://iisg.amsterdam/graph/cshapes/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix sh: <http://www.w3.org/ns/shacl#>
+prefix vocab: <https://iisg.amsterdam/vocab/>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:vocab {
+
+  # Classes
+
+  ## Capital
+
+  vocab:Capital rdfs:subClassOf geo:Feature ;
+    rdfs:label "The capital city of a country."@en-gb .
+
+  vocab:CapitalShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:class geo:Geometry ;
+      sh:path geo:hasGeometry ;
+    ] ;
+    sh:property [
+      sh:datatype rdf:langString ;
+      sh:path rdfs:label ;
+    ] ;
+    sh:targetClass vocab:Capital .
+
+
+  ## Country
+
+  vocab:Country
+    rdfs:label "A country of the world."@en-gb .
+
+  vocab:CountryShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:class vocab:CountrySlice ;
+      sh:minCount 1 ;
+      sh:nodeKind sh:IRI ;
+      sh:path vocab:hasTemporalSlice ;
+    ] ;
+    sh:targetClass vocab:Country .
+
+
+  ## CountrySlice
+
+  vocab:CountrySlice rdfs:subClassOf vocab:TemporalSlice ;
+    rdfs:comment "A manifestation of a country in time."@en-gb ;
+    rdfs:label "country slice"@en-gb .
+
+  vocab:CountrySliceShape a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+      sh:class geo:Geometry ;
+      sh:nodeKind sh:IRI ;
+      sh:path geo:hasGeometry ;
+    ] ;
+    sh:property [
+      sh:datatype rdf:langString ;
+      sh:minCount 1 ;
+      sh:path rdfs:label ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:double ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:path vocab:area ;
+    ] ;
+    sh:property [
+      sh:class vocab:Capital ;
+      sh:maxCount 1 ;
+      sh:minCount 1 ;
+      sh:nodeKind sh:IRI ;
+      sh:path vocab:capital ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:string ;
+      sh:maxCount 1 ;
+      sh:path vocab:cowCode ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:date ;
+      sh:maxCount 1 ;
+      sh:path vocab:cowStart;
+    ] ;
+    sh:property [
+      sh:datatype xsd:date ;
+      sh:maxCount 1 ;
+      sh:path vocab:cowEnd ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:string ;
+      sh:maxCount 1 ;
+      sh:path vocab:gwCode ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:date ;
+      sh:maxCount 1 ;
+      sh:path vocab:gwEnd ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:date ;
+      sh:maxCount 1 ;
+      sh:path vocab:gwStart ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:string ;
+      sh:path vocab:isoAlpha2 ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:string ;
+      sh:path vocab:isoAlpha3 ;
+    ] ;
+    sh:property [
+      sh:datatype rdf:langString ;
+      sh:path vocab:isoName ;
+    ] ;
+    sh:property [
+      sh:datatype xsd:positiveInteger ;
+      sh:path vocab:isoNumber ;
+    ] ;
+    sh:targetClass vocab:CountrySlice .
+
+
+  ## Geometry
+
+  geo:GeometryNode a sh:NodeShape ;
+    sh:closed true ;
+    sh:ignoredProperties ( rdf:type ) ;
+    sh:property [
+       sh:datatype geo:wktLiteral ;
+       sh:nodeKind sh:IRI ;
+       sh:path geo:asWKT ;
+    ] ;
+    sh:targetClass geo:Geometry .
+
+
+  ## TemporalSlice
+
+  vocab:TemporalSlice rdfs:subClassOf geo:Feature ;
+    rdfs:label "temporal slice"@en-gb .
+
+
+
+  # Properties
+
+  ## area
+
+  # The CSpahes GML element `AREA' is converted to property `vocab:area'.
+  vocab:area rdfs:label "area"@en-gb ;
+    rdfs:comment "The quantification of the polygon area in square kilometers, computed using an Eckert VI projection."@en-gb ;
+    rdfs:domain vocab:Country ;
+    # TBD: Use a datatype that specifically denotes square kilometers.
+    rdfs:range xsd:float .
+
+
+  ## capital
+
+  vocab:capital
+    rdfs:comment "The country capital."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "capital"@en-gb ;
+    rdfs:range vocab:Capital .
+
+
+  ## cowCode
+
+  vocab:cowCode
+    rdfs:comment "Correlates of War numeric identifier code."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Correlates of War code"@en-gb ;
+    rdfs:range xsd:positiveInteger .
+
+
+  ## cowEnd
+
+  vocab:cowEnd
+    rdfs:comment "The end date at which the the polygon applies, based on Correlates of War system list."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Correlates of War end date"@en-gb ;
+    rdfs:range xsd:date .
+
+
+  ## cowStart
+
+  vocab:cowStart
+    rdfs:comment "The start date at which the polygon applies, based on Correlates of War system list."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Correlates of War start date"@en-gb ;
+    rdfs:range xsd:date .
+
+
+  # gwCode
+
+  vocab:gwCode
+    rdfs:comment "Gleditsch&Ward (1999) numeric identifier code for countries."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Gleditsch&Ward code"@en-gb ;
+    rdfs:range xsd:positiveInteger .
+
+
+  ## gwEnd
+
+  vocab:gwEnd
+    rdfs:comment "The end date of the polygon, based on Gleditsch&Ward list of independent states."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Gleditsch&Ward end date"@en-gb ;
+    rdfs:range xsd:date .
+
+
+  ## gwStart
+
+  vocab:gwStart
+    rdfs:comment "The start date of the polygon, based on Gleditsch&Ward list of independent states."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "Gleditsch&Ward start date"@en-gb ;
+    rdfs:range xsd:date .
+
+
+  ## hasTemporalSlice
+
+  vocab:hasTemporalSlice
+    rdfs:comment "Relates an a-temporal resource to one of its temporal manifestations.  For example, a country can be related to differenty manifestations of that country in time, having different population numbers and different geometries."@en-gb ;
+    rdfs:domain rdfs:Resource ;
+    rdfs:label "has temporal slice"@en-gb ;
+    rdfs:range vocab:TemporalSlice .
+
+
+  ## isoAlpha2
+
+  vocab:isoAlpha2
+    rdfs:comment "ISO 3166-1 Alpha2 two-character country codes."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "ISO 2-character country code"@en-gb ;
+    # TBD: Use Lexvo identifiers.
+    rdfs:range xsd:string .
+
+
+  ## isoAlpha3
+
+  vocab:isoAlpha3
+    rdfs:comment "ISO 3166-1 Alpha3 three-character country codes."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "ISO 3-character country code"@en-gb ;
+    # TBD: Use Lexvo identifiers.
+    rdfs:range xsd:string .
+
+
+  ## isoName
+
+  vocab:isoName
+    rdfs:comment "Country name according to ISO 3166 standard (Note: ISO 3166 applies only to polygons active during and after 1974)."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "ISO country name"@en-gb ;
+    # TBD: Use Lexvo identifiers.
+    rdfs:range rdf:langString .
+
+
+  ## isoNumber
+
+  vocab:isoNumber
+    rdfs:comment "ISO 3166-1 numerical country codes."@en-gb ;
+    rdfs:domain vocab:Country ;
+    rdfs:label "ISO country number"@en-gb ;
+    # TBD: Use Lexvo identifiers.
+    rdfs:range xsd:positiveInteger .
+
+}

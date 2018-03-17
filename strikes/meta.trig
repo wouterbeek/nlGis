@@ -1,0 +1,69 @@
+prefix dataset: <https://iisg.amsterdam/dataset/>
+prefix dc: <http://purl.org/dc/elements/1.1/>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix graph: <https://iisg.amsterdam/graph/strikes/>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix void: <http://rdfs.org/ns/void#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Version: 1
+
+# Variable group(s): Labour conflicts
+
+# Variable(s): Number of strikes/lockouts/other conflicts, number of
+# participants and total days lost.
+
+# Unit of analysis: Years.
+
+# Keywords: Netherlands, strikes, lockouts.
+
+# Abstract (200 words): This dataset consists of the dataset composed
+# by Sjaak van der Velden (1372-2010). The original dataset in Access
+# was built for his thesis (defended in 2000) and enlarged in later
+# years.
+
+# Time period: 1372-2010
+
+# Geographical coverage: Netherlands.
+
+# Methodologies used for data collection and processing:
+# Bibliographical research, research of newspapers, union material.
+
+# Data quality: (i) Central statistical agencies, (ii) Monographs,
+# journals, yearbooks.
+
+# Period of collection: 1990-present.
+
+# Data collectors: Sjaak van der Velden.
+
+# Sources: Sjaak van der Velden, Stakingen in Nederland 1830-1995,
+# Amsterdam: Stichting Beheer IISG 2000.
+
+# Text: This data collection was carried out within the framework of
+# the Global Hub Labour Conflicts (led by Sjaak van der Velden)
+# financed by the International Institute of Social History. The
+# dataset by Van der Velden was produced when he wrote his thesis in
+# 2000, augmented later on and financed by himself. Because he used
+# more sources the time series Van der Velden constructed goes further
+# back in time than the CBS series and has more information on labour
+# conflicts for many years.  The original dataset is in an Access file
+# and can be provided on request.
+
+graph:meta {
+
+  dataset:strikes a void:Dataset ;
+    dc:created "2015"^^xsd:gYear ;
+    dc:creator <http://viaf.org/viaf/69238610> ;
+    dc:description "Netherlands Strikes, lockouts and other forms of labour conflict (number, number of companies, workers, days lost), 1372-2010."@en-gb ;
+    foaf:homepage "http://hdl.handle.net/10622/APNT4U"^^xsd:anyURI ;
+    rdfs:label "Strikes in the Netherlands"@en-gb ;
+    rdfs:label "Stakingen in Nederland"@nl-nl ;
+    void:subset graph:data , graph:meta , graph:vocab .
+
+  graph:data rdfs:label "data"@en-gb .
+
+  graph:meta rdfs:label "metadata"@en-gb .
+
+  graph:vocab rdfs:label "vocabulary"@en-gb .
+
+}

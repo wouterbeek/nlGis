@@ -1,0 +1,57 @@
+prefix dataset: <https://iisg.amsterdam/dataset/>
+prefix dct: <http://purl.org/dc/terms/>
+prefix fabio: <http://purl.org/spar/fabio/>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix graph: <https://iisg.amsterdam/graph/mint/>
+prefix orcid: <http://orcid.org/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix rel: <http://purl.org/vocab/relationship/>
+prefix void: <http://rdfs.org/ns/void#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:meta {
+  dataset:mint a void:Dataset ;
+    dct:date "2016-11-25"^^xsd:date ;
+    dct:creator orcid:0000-0001-6394-260X ;
+    dct:license "https://creativecommons.org/licenses/by-nc-sa/4.0/"^^xsd:anyURI ;
+    rdfs:label "Dutch mint authorities and houses (6th-21st century)"@en-gb ;
+    void:subset
+      graph:authorities ,
+      graph:houses ,
+      graph:meta ,
+      graph:vocab .
+
+  graph:authorities
+    dct:description """<section xml:lang="en-gb"><p>This dataset contains polygons of the major authorities that existed in the Low Countries and that issued coins.  Each authority is paired with beginning and end dates. Starting from the twelfth century onwards, most authorities are included except for small authorities such as towns.</p><p>Sources for this GIS dataset are manifold.  One of the major sources is a project that is under development by the author of this dataset and aims to create a GIS map of late medieval administrative-judicial units (heerlijkheden) and/or parishes.  However, also two base maps were used and converted into shapefiles: a political map of the Low Countries around 1350, the other of the Burgundian lands.  Links to these base maps are included below.</p><p>Some disclaimers should also be made:<ul><li>Only limited attention was given to changing landscapes and coastlines, especially in the Early and High Middle Ages.</li><li>The maps are an estimation of the political constitution in the Low Countries at any given time.  The actual historical situation may have been different at various locations, and borders may be incorrect or imprecise.</li><li>The beginning and end dates should not be used as absolute values, they are more often than not intended to be practical for the purpose of our project: displaying coin production in the Low Countries.</li></ul></p>"""^^rdf:HTML ;
+    dct:subject
+      "Arts and Humanities"@en-gb ,
+      "coin production"@en-gb ,
+      "economic history"@en-gb ,
+      "GIS"@en-gb ,
+      "Low Countries"@en-gb ,
+      "Social Sciences"@en-gb ;
+    fabio:hasSubtitle "12th-21st centuries"@en-gb .
+
+  graph:houses
+    dct:description """<section xml:lang="en-gb"><p>This dataset contains points for all known mint houses in, or producing for, the Low Countries between the 6th and 21st centuries, and the years in which these mints were actively producing coins.</p><p>The dataset is constructed using the coin production dataset composed by ourselves; Van Gelder, <em>Nederlandse munten</em> (8th ed., 2002); Vanhoudt, <em>Atlas der Munten van België van de Kelten tot heden</em> (2nd ed., Heverlee 2007); Vanhoudt, <em>De munten van de Bourgondische, Spaanse en Oostenrijkse Nederlanden, en van de Franse en Hollandse periode</em> (1434-1830) (Heverlee 2015); Polak, <em>Historiografie en economie van de ‘muntchaos’</em>.  <em>De muntproductie van de Republiek</em> (1606-1795) (Amsterdam 1998).</p><p>For the Southern Low Countries and Belgium the years of activities were matched to a catalogue of coins (Vanhoudt 2007) and as a consequence the years mints were actively producing are more precise than those of counterparts in the Northern Low Countries (which are largely based on the date ranges collected by Van Gelder). In the future, it would be advisable to link this dataset up to catalogues of coins of the Northern Low Countries as well, so that the years mints were active become more refined.</p><time datetime="2016-11-25">(2016-11-25)</time></section>"""^^rdf:HTML ;
+    dct:subject
+      "Arts and Humanities"@en-gb ,
+      "coin production"@en-gb ,
+      "economic history"@en-gb ,
+      "GIS"@en-gb ,
+      "Low Countries"@en-gb ,
+      "mint houses"@en-gb ,
+      "Social Sciences"@en-gb ;
+    dct:title "Mint Houses of the Low Countries"@en-gb ;
+    fabio:hasSubtitle "6th-21st centuries"@en-gb .
+
+  orcid:0000-0001-6394-260X a foaf:Person ;
+    foaf:familyName "Stapel"@nl-nl ;
+    foaf:givenName "Rombert"@nl-nl ;
+	  rel:employedBy "International Institute of Social History"@en-gb .
+
+  graph:meta rdfs:label "metadata"@en-gb .
+
+  graph:vocab rdfs:label "vocabulary"@en-gb .
+}

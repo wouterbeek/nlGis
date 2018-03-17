@@ -1,0 +1,32 @@
+prefix dct: <http://purl.org/dc/terms/>
+prefix foaf: <http://xmlns.com/foaf/0.1/>
+prefix graph: <http://www.gemeentegeschiedenis.nl/graph/>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix void: <http://rdfs.org/ns/void#>
+prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+graph:meta {
+
+  <http://www.gemeentegeschiedenis.nl/> a void:Dataset ;
+    dct:created "2015"^^xsd:gYear ;
+    dct:creator
+      "Ad van der Meer"@nl ,
+      "Edward Mac Gillavry"@nl ,
+      "Menno den Engelse"@nl ,
+      "Onno Boonstra"@nl ,
+      "Petra Dreiskämper"@nl ,
+      "Ivo Zandhuis"@nl ;
+    dct:description "Nederland telt bijna 400 gemeenten.  In 1812 waren dat er meer dan 1100.  In twee eeuwen vol herindelingen, annexaties en fusies heeft Nederland bijna 1700 gemeenten gekend.  De data van gemeentegeschiedenis is gebouwd op twee datasets: het Repertorium van Nederlandse gemeenten vanaf 1812 van Ad van der Meer en Onno Boonstra en de bij DANS gedeponeerde NLGis shapefiles van Onno Boonstra, waarin van elk jaar van 1812 tot 1997 de gemeentegrenzen zijn vastgelegd."@nl ;
+    dct:title "Gemeentegeschiedenis"@nl ;
+    foaf:page "http://www.gemeentegeschiedenis.nl/"^^xsd:anyURI ;
+    void:subset
+      graph:data ,
+      graph:meta ,
+      graph:vocab .
+
+  graph:data rdfs:label "data"@en .
+
+  graph:meta rdfs:label "metadata"@en .
+
+  graph:vocab rdfs:label "vocabulary"@en .
+}

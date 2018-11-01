@@ -6,7 +6,7 @@
 @version 2017/10-2017/12
 */
 
-:- use_module(library(tapir)).
+:- use_module(library(tapir/tapir_api)).
 
 run :-
   Properties = _{

@@ -18,15 +18,15 @@
 :- use_module(library(file_ext)).
 :- use_module(library(graph/gv)).
 :- use_module(library(os_ext)).
-:- use_module(library(sw/rdf_export)).
-:- use_module(library(sw/rdf_mem)).
-:- use_module(library(sw/rdf_mem_geo)).
-:- use_module(library(sw/rdf_prefix)).
-:- use_module(library(sw/rdf_term)).
-:- use_module(library(sw/shacl)).
+:- use_module(library(semweb/rdf_export)).
+:- use_module(library(semweb/rdf_mem)).
+:- use_module(library(semweb/rdf_mem_gis)).
+:- use_module(library(semweb/rdf_prefix)).
+:- use_module(library(semweb/rdf_term)).
+:- use_module(library(semweb/shacl_export)).
 :- use_module(library(stream_ext)).
 :- use_module(library(string_ext)).
-:- use_module(library(tapir)).
+:- use_module(library(tapir/tapir_api)).
 
 :- rdf_meta
    action_iri(+, r),
@@ -34,8 +34,8 @@
    convert_row(+, r),
    result_iri(+, r).
 
-:- maplist(rdf_assert_prefix, [
-     dct-'http://purl.org/dc/terms/',
+:- maplist(rdf_register_prefix, [
+     dcterm,
      graph-'https://iisg.amsterdam/graph/strikes/',
      resource-'https://iisg.amsterdam/resource/',
      vocab-'https://iisg.amsterdam/vocab/'
@@ -49,11 +49,11 @@ run :-
   convert_file('data.xlsx', csv, File),
 
   % WINDOWS-1252 → UTF-8
-  call_stream_file(File, recode_stream('windows-1252')),
+  recode_file(File, 'windows-1252'),
 
   % .csv → .nq.gz
   rdf_equal(G, graph:data),
-  call_stream_file(
+  read_from_file(
     File,
     [In]>>forall(
             csv_read_stream_row(In, Row),
@@ -61,20 +61,13 @@ run :-
           )
   ),
   delete_file(File),
-  setup_call_cleanup(
-    gzopen('data.nq.gz', write, Out),
-    forall(
-      rdf_triple(S, P, O, G),
-      rdf_write_quad(Out, S, P, O, G)
-    ),
-    close(Out)
-  ),
+  write_to_file('data.nq.gz', rdf_write_quads),
 
   % .trig.gz → .svg
   rdf_equal(graph:vocab, VocabG),
   setup_call_cleanup(
     rdf_load_file('vocab.trig', [graph(DefG)]),
-    gv_export(dot, svg, 'vocab.svg', {VocabG}/[Out]>>shacl_export(Out, VocabG)),
+    gv_export('vocab.svg', shacl_export(mem(G))),
     maplist(rdf_retract_graph, [DefG,VocabG])
   ),
 
@@ -82,8 +75,8 @@ run :-
   rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
+    assets: ['vocab.svg'],
     avatar: 'avatar.jpg',
-    binary_files: ['vocab.svg'],
     description: "Netherlands Strikes, lockouts and other forms of labour conflict (number, number of companies, workers, days lost), 1372-2010.",
     files: ['data.nq.gz','meta.trig','vocab.trig'],
     prefixes: [
@@ -96,7 +89,7 @@ run :-
       vocab
     ]
   },
-  dataset_upload(strikes, Properties),
+  dataset_upload(druid, nlgis, strikes, Properties),
 
   % cleanup temporary files
   concurrent_maplist(delete_file, ['data.nq.gz','vocab.svg']),
@@ -117,7 +110,7 @@ convert_row(
   % dc:description
   (   Description == ''
   ->  true
-  ;   rdf_assert_triple(Strike, dct:description, Description-'nl-nl', G)
+  ;   rdf_assert_triple(Strike, dcterm:description, Description-'nl-nl', G)
   ),
   % vocab:action
   (action_iri(Action1, Action2)),

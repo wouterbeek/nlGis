@@ -18,19 +18,19 @@
 
 :- use_module(library(dcg)).
 :- use_module(library(file_ext)).
-:- use_module(library(geo/gml)).
+:- use_module(library(gis/gml)).
 :- use_module(library(graph/gv)).
 :- use_module(library(http/http_client2)).
-:- use_module(library(sw/rdf_export)).
-:- use_module(library(sw/rdf_mem_geo)).
-:- use_module(library(sw/rdf_mem)).
-:- use_module(library(sw/rdf_prefix)).
-:- use_module(library(sw/rdf_term)).
-:- use_module(library(sw/shacl)).
-:- use_module(library(tapir)).
+:- use_module(library(semweb/rdf_export)).
+:- use_module(library(semweb/rdf_mem)).
+:- use_module(library(semweb/rdf_mem_gis)).
+:- use_module(library(semweb/rdf_prefix)).
+:- use_module(library(semweb/rdf_term)).
+:- use_module(library(semweb/shacl_export)).
+:- use_module(library(tapir/tapir_api)).
 :- use_module(library(xml_ext)).
 
-:- maplist(rdf_assert_prefix, [
+:- maplist(rdf_register_prefix, [
      geo,
      graph-'https://iisg.amsterdam/graph/cshapes/',
      resource-'https://iisg.amsterdam/resource/',
@@ -81,26 +81,17 @@ run(In1) :-
   (Status =:= 0 -> true ; print_message(warning, process_status(Status))),
 
   % .gml → .nq.gz
-  rdf_equal(graph:data, G),
-  setup_call_cleanup(
-    open('data.gml', read, In2),
-    call_on_xml(In2, ['ogr:cshapes'], cshapes_record(G)),
-    close(In2)
+  read_from_file(
+    'data.gml',
+    [In]>>call_on_xml(In, ['ogr:cshapes'], cshapes_record)
   ),
-  setup_call_cleanup(
-    gzopen('data.nq.gz', write, Out),
-    forall(
-      rdf_triple(S, P, O, G),
-      rdf_write_quad(Out, S, P, O, G)
-    ),
-    close(Out)
-  ),
+  rdf_save_file('data.nq.gz'),
 
   % .trig → .svg
   rdf_equal(VocabG, graph:vocab),
   setup_call_cleanup(
     rdf_load_file('vocab.trig', [graph(DefG)]),
-    gv_export(dot, svg, 'vocab.svg', {VocabG}/[Out]>>shacl_export(Out, VocabG)),
+    gv_export('vocab.svg', shacl_export(mem(VocabG))),
     maplist(rdf_retract_graph, [DefG,VocabG])
   ),
 
@@ -109,8 +100,8 @@ run(In1) :-
   rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
+    assets: ['data.txt','vocab.svg'],
     avatar: 'avatar.png',
-    binary_files: ['data.txt','vocab.svg'],
     description: "The countries of the world, from 1920 untill today.  This dataset includes state boundaries and capitals and is coded according to the Correlates of War and the Gleditsch and Ward (1999) state lists.",
     exampleResources: [
       country-'Netherlands/1946',
@@ -134,7 +125,7 @@ run(In1) :-
       vocab
     ]
   },
-  dataset_upload(cshapes, Properties),
+  dataset_upload(druid, nlgis, cshapes, Properties),
 
   % Cleanup temporary files.
   delete_directory_and_contents('__MACOSX'),
@@ -152,14 +143,15 @@ cshapes_version(version(Major,Minor,Patch)) -->
   ("-" -> integer(Patch) ; {Patch = 0}),
   ".zip".
 
-cshapes_record(G, [element(_,_,Dom)]) :-
+cshapes_record([element(_,_,Dom)]) :-
   flag(number_of_records, NumRecords, NumRecords+1),
-  (   cshapes_record_(G, Dom)
+  (   cshapes_record_(Dom)
   ->  true
   ;   print_message(warning, chsapes_record(NumRecords))
   ).
 
-cshapes_record_(G, Dom) :-
+cshapes_record_(Dom) :-
+  rdf_equal(graph:data, G),
   % vocab:Country
   xpath_chk(Dom, //'ogr:CNTRY_NAME'(normalize_space), CountryName),
   atom_phrase(space_to_hyphen, CountryName, CountryLocal),
@@ -215,13 +207,13 @@ cshapes_record_(G, Dom) :-
   % vocab:Capital geo:hasGeometry/geo:asWKT geo:wktLiteral
   xpath_chk(Dom, //'ogr:CAPLONG'(number), CapitalLong),
   xpath_chk(Dom, //'ogr:CAPLAT'(number), CapitalLat),
-  rdf_assert_wkt(Capital, 'Point'([CapitalLong,CapitalLat]), G),
+  rdf_assert_shape(Capital, shape(_,_,_,'Point'([CapitalLong,CapitalLat])), G),
   % vocab:Capital rdfs:label rdf:langString
   rdf_assert_triple(Capital, rdfs:label, CapitalName-'en-gb', G),
   % vocab:CountrySlice vocab:cowCode xsd:string
   (   xpath_chk(Dom, //'ogr:COWCODE'(normalize_space), CowCode),
       CowCode \== '-1'
-  ->  rdf_assert_triple(CountrySlice, vocab:cowCode, str(CowCode), G)
+  ->  rdf_assert_triple(CountrySlice, vocab:cowCode, string(CowCode), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:cowStart xsd:date
@@ -247,7 +239,7 @@ cshapes_record_(G, Dom) :-
   % vocab:CountrySlice geo:hasGeometry/geo:asWKT geo:wktLiteral
   xpath_chk(Dom, //'ogr:geometryProperty'(content), [GeoDom]),
   gml_shape(GeoDom, Shape),
-  rdf_assert_wkt(CountrySlice, Shape, G),
+  rdf_assert_shape(CountrySlice, Shape, G),
   % vocab:CountrySlice vocab:area xsd:double
   xpath_chk(Dom, //'ogr:AREA'(normalize_space), AreaAtom),
   atom_number(AreaAtom, Area),
@@ -257,17 +249,17 @@ cshapes_record_(G, Dom) :-
   % vocab:CountrySlice vocab:gwCode xsd:string
   (   xpath_chk(Dom, //'ogr:GWCODE'(normalize_space), GwCode),
       GwCode \== '-1'
-  ->  rdf_assert_triple(CountrySlice, vocab:gwCode, str(GwCode), G)
+  ->  rdf_assert_triple(CountrySlice, vocab:gwCode, string(GwCode), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoAlpha2 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL2'(normalize_space), IsoAlpha2)
-  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha2, str(IsoAlpha2), G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha2, string(IsoAlpha2), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoAlpha3 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL3'(normalize_space), IsoAlpha3)
-  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha3, str(IsoAlpha3), G)
+  ->  rdf_assert_triple(CountrySlice, vocab:isoAlpha3, string(IsoAlpha3), G)
   ;   true
   ),
   % vocab:CountrySlice vocab:isoName rdf:langString

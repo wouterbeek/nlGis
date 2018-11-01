@@ -18,19 +18,19 @@
 :- use_module(library(dcg)).
 :- use_module(library(dict)).
 :- use_module(library(graph/gv)).
-:- use_module(library(sw/rdf_export)).
-:- use_module(library(sw/rdf_mem)).
-:- use_module(library(sw/rdf_mem_geo)).
-:- use_module(library(sw/rdf_prefix)).
-:- use_module(library(sw/rdf_term)).
-:- use_module(library(sw/shacl)).
-:- use_module(library(tapir)).
+:- use_module(library(semweb/rdf_export)).
+:- use_module(library(semweb/rdf_mem)).
+:- use_module(library(semweb/rdf_mem_geo)).
+:- use_module(library(semweb/rdf_prefix)).
+:- use_module(library(semweb/rdf_term)).
+:- use_module(library(semweb/shacl)).
+:- use_module(library(tapir/tapir_api)).
 
 :- rdf_meta
    authority(r, +),
    house(r, r, +).
 
-:- maplist(rdf_assert_prefix, [
+:- maplist(rdf_register_prefix, [
      graph-'https://iisg.amsterdam/graph/mint/',
      resource-'https://iisg.amsterdam/resource/',
      vocab-'https://iisg.amsterdam/vocab/'
@@ -50,20 +50,13 @@ run :-
   maplist(house(graph:authorities, graph:houses), Features2),
 
   % .geojson → .nq.gz
-  setup_call_cleanup(
-    gzopen('data.nq.gz', write, Out),
-    forall(
-      rdf_triple(S, P, O, G),
-      rdf_write_quad(Out, S, P, O, G)
-    ),
-    close(Out)
-  ),
+  write_to_file('data.nq.gz', rdf_write_quads),
 
   % .trig → .svg
   rdf_equal(graph:vocab, G),
   setup_call_cleanup(
     rdf_load_file('vocab.trig', [graph(DefG)]),
-    gv_export(dot, svg, 'vocab.svg', {G}/[Out]>>shacl_export(Out, G)),
+    export_shacl('vocab.svg', G, [format(svg),method(dot)]),
     maplist(rdf_retract_graph, [DefG,G])
   ),
 
@@ -71,8 +64,8 @@ run :-
   rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
+    assets: ['mint.mp4','vocab.svg'],
     avatar: 'avatar.jpg',
-    binary_files: ['mint.mp4','vocab.svg'],
     description: "Polygons of the major coin issueing authorities that existed in the Low Countries between the 6th and the 21st centuries.  This dataset also includes points for the mint houses responsible for the production of coins.",
     exampleResources: [authority-'Mechelen',house-'Maaseik'],
     files: ['data.nq.gz','meta.trig','vocab.trig'],
@@ -116,7 +109,7 @@ authority(G1, Feature) :-
   ;   _{coordinates: Coords, type: Type} :< Geometry1,
       Shape =.. [Type,Coords],
       % geo:Geometry geo:asWKT geo:wktLiteral
-      rdf_assert_wkt(Authority, Shape, G1, Geometry2)
+      rdf_assert_shape(Authority, Shape, shape(_,_,_,G1), Geometry2)
   ),
   % geo:Geometry vocab:begin xsd:gYear
   date(Properties.'DATEfrom', Begin),
@@ -162,7 +155,7 @@ house(G1, G2, Feature) :-
   ;   _{coordinates:Coords, type:Type} :< Geometry1,
       Shape =.. [Type,Coords],
       % geo:Geometry geo:asWKT geo:wktLiteral
-      rdf_assert_wkt(House, Shape, G2, Geometry2)
+      rdf_assert_shape(House, shape(_,_,_,Shape), G2, Geometry2)
   ),
   % geo:Geometry vocab:range xsd:gYear
   date(Properties.'DATEfrom', Begin),

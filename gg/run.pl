@@ -11,18 +11,18 @@
 :- use_module(library(zlib)).
 
 :- use_module(library(atom_ext)).
-:- use_module(library(sw/rdf_clean)).
-:- use_module(library(sw/rdf_deref)).
-:- use_module(library(sw/rdf_export)).
-:- use_module(library(sw/rdf_mem)).
-:- use_module(library(sw/rdf_prefix)).
-:- use_module(library(sw/rdf_term)).
-:- use_module(library(tapir)).
+:- use_module(library(semweb/rdf_clean)).
+:- use_module(library(semweb/rdf_deref)).
+:- use_module(library(semweb/rdf_export)).
+:- use_module(library(semweb/rdf_mem)).
+:- use_module(library(semweb/rdf_prefix)).
+:- use_module(library(semweb/rdf_term)).
+:- use_module(library(tapir/tapir_api)).
 
 :- thread_local
      visited/1.
 
-:- maplist(rdf_assert_prefix, [
+:- maplist(rdf_register_prefix, [
      graph-'http://www.gemeentegeschiedenis.nl/graph/',
      resource-'http://www.gemeentegeschiedenis.nl/',
      skos
@@ -42,14 +42,7 @@ run :-
       'Noord-Brabant', 'Limburg'
     ]
   ),
-  setup_call_cleanup(
-    gzopen('data.nq.gz', write, Out),
-    forall(
-      rdf_triple(S, P, O, G),
-      rdf_write_quad(Out, S, P, O, G)
-    ),
-    close(Out)
-  ),
+  write_to_file('data.nq.gz', rdf_write_quads).
 
   % upload to Triply
   rdf_bnode_iri(BNodePrefix),
@@ -96,11 +89,11 @@ deref_instance(S) :-
   assert(visited(S)),
   rdf_deref_uri(S, deref_triples, [media_type(media(application/'rdf+xml',[]))]).
 
-deref_triples(BNodePrefix, Triples, _) :-
-  maplist(deref_triple(BNodePrefix), Triples).
+deref_triples(Triples, _) :-
+  maplist(deref_triple, Triples).
 
-deref_triple(BNodePrefix, Triple) :-
-  rdf_clean_triple(BNodePrefix, Triple, rdf(S,P,O)),
+deref_triple(Triple) :-
+  rdf_clean_triple(Triple, rdf(S,P,O)),
   deref_triple(S, P, O).
 
 % Assert + dereference

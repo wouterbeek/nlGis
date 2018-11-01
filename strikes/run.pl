@@ -20,7 +20,6 @@
 :- use_module(library(os_ext)).
 :- use_module(library(semweb/rdf_export)).
 :- use_module(library(semweb/rdf_mem)).
-:- use_module(library(semweb/rdf_mem_gis)).
 :- use_module(library(semweb/rdf_prefix)).
 :- use_module(library(semweb/rdf_term)).
 :- use_module(library(semweb/shacl_export)).

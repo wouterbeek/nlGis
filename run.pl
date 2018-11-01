@@ -35,5 +35,5 @@ run :-
       vocab-'https://iisg.amsterdam/vocab/'
     ]
   },
-  dataset_upload(nlgis, Properties),
+  dataset_upload(druid, nlgis, nlgis, Properties),
   halt.

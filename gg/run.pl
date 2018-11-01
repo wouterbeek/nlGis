@@ -73,7 +73,7 @@ run :-
       vocab-'http://www.gemeentegeschiedenis.nl/gg-schema#'
     ]
   },
-  dataset_upload(gemeentegeschiedenis, Properties),
+  dataset_upload(druid, nlgis, gemeentegeschiedenis, Properties),
 
   % cleanup temporary files
   delete_file('data.nq.gz'),

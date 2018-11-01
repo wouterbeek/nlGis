@@ -20,7 +20,6 @@
 :- use_module(library(graph/gv)).
 :- use_module(library(semweb/rdf_export)).
 :- use_module(library(semweb/rdf_mem)).
-:- use_module(library(semweb/rdf_mem_geo)).
 :- use_module(library(semweb/rdf_prefix)).
 :- use_module(library(semweb/rdf_term)).
 :- use_module(library(semweb/shacl)).
@@ -79,7 +78,7 @@ run :-
       vocab
     ]
   },
-  dataset_upload(mint, Properties),
+  dataset_upload(druid, nlgis, mint, Properties),
 
   % cleanup of temporary files
   concurrent_maplist(delete_file, ['data.nq.gz']),

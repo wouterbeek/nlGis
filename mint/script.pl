@@ -147,11 +147,11 @@ assert_house(G1, G2, Feature) :-
 %! export_schema(+VocabFile:atom, +SvgFile:atom) is det.
 
 export_schema(VocabFile, SvgFile) :-
-  rdf_equal(graph:vocab, G),
+  rdf_equal(graph:vocab, VocabG),
   setup_call_cleanup(
     rdf_load_file(VocabFile, [graph(DefG)]),
-    shacl_export_file(mem(G), SvgFile),
-    maplist(rdf_retract_graph, [DefG,G])
+    shacl_export_file(mem(VocabG), SvgFile),
+    maplist(rdf_retract_graph, [DefG,VocabG])
   ).
 
 

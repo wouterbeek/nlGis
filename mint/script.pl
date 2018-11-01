@@ -66,7 +66,7 @@ etl :-
   SvgFile = 'vocab.svg',
   export_schema(VocabFile, SvgFile),
 
-  % Upload to Triply.
+  % Upload to Druid.
   upload(SourceFile1, SourceFile2, DataFile, VocabFile, SvgFile).
 
 

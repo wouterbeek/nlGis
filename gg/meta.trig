@@ -29,4 +29,5 @@ graph:meta {
   graph:meta rdfs:label "metadata"@en .
 
   graph:vocab rdfs:label "vocabulary"@en .
+
 }

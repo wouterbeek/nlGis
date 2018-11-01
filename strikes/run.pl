@@ -70,7 +70,7 @@ run :-
     maplist(rdf_retract_graph, [DefG,VocabG])
   ),
 
-  % upload to Triply
+  % upload to Druid.
   rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,

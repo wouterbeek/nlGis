@@ -66,7 +66,7 @@ run :-
   rdf_equal(graph:vocab, VocabG),
   setup_call_cleanup(
     rdf_load_file('vocab.trig', [graph(DefG)]),
-    gv_export('vocab.svg', shacl_export(mem(G))),
+    gv_export_file(mem(G), 'vocab.svg'),
     maplist(rdf_retract_graph, [DefG,VocabG])
   ),
 

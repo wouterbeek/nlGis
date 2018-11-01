@@ -69,7 +69,7 @@ deref_triples(_, Triples, _) :-
   maplist(deref_triple, Triples).
 
 deref_triple(Triple) :-
-  rdf_bnode_iri(BNodePrefix),
+  rdf_bnode_prefix(BNodePrefix),
   rdf_clean_triple(BNodePrefix, Triple, rdf(S,P,O)),
   deref_triple(S, P, O).
 
@@ -95,7 +95,7 @@ deref_triple(S, P, O0) :-
 %! upload(+DataFile:atom) is det.
 
 upload(DataFile) :-
-  rdf_bnode_iri(BNodePrefix),
+  rdf_bnode_prefix(BNodePrefix),
   Properties = _{
     accessLevel: public,
     avatar: 'avatar.png',

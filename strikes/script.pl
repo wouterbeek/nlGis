@@ -1,5 +1,7 @@
 :- encoding(utf8).
-/* Strikes ETL
+:- module(script, [etl/0]).
+
+/** <module> Strikes ETL
 
 @author Wouter Beek
 @see https://datasets.socialhistory.org/dataset.xhtml?persistentId=hdl:10622/APNT4U
@@ -19,8 +21,9 @@
 :- use_module(library(graph/gv)).
 :- use_module(library(http/http_client2)).
 :- use_module(library(os_ext)).
+:- use_module(library(semweb/rdf_api)).
 :- use_module(library(semweb/rdf_export)).
-:- use_module(library(semweb/rdf_mem)).
+:- use_module(library(semweb/rdf_mem)).%API
 :- use_module(library(semweb/rdf_prefix)).
 :- use_module(library(semweb/rdf_term)).
 :- use_module(library(semweb/shacl_export)).
@@ -34,7 +37,7 @@
 :- debug(unknown_issue).
 
 :- maplist(rdf_register_prefix, [
-     dcterm,
+     dct,
      graph-'https://iisg.amsterdam/graph/strikes/',
      iisg-'https://iisg.amsterdam/vocab/',
      resource-'https://iisg.amsterdam/resource/'
@@ -53,50 +56,46 @@ etl :-
   SourceFile = 'Netherlands_2017.xlsx',
   CsvFile = 'source.csv',
   convert_file(SourceFile, csv, CsvFile),
-
   % WINDOWS-1252 → UTF-8
   recode_file(CsvFile, 'windows-1252'),
-
   % .csv → .nq.gz
   DataFile = 'data.nq.gz',
   transform(CsvFile, DataFile),
-
   % .trig.gz → .svg
   VocabFile = 'vocab.trig',
   ImgFile  ='vocab.svg',
-  export_scheme(VocabFile, ImgFile).
-
+  export_scheme(VocabFile, ImgFile),
   % Upload to Druid.
-  %upload(DataFile, VocabFile, ImgFile).
+  upload(DataFile, VocabFile, ImgFile).
 
 
 
-%! cnvert_row(+Row:compound, +G:rdf_graph) is det.
+%! convert_row(+Backend, +Row:compound) is det.
 
-convert_row(Row, G) :-
+convert_row(B, Row) :-
   compound_name_arguments(Row, row, [Id|T]),
-  convert_row(Id, T, G).
+  convert_row(B, Id, T).
 
-convert_row(Id, _, _) :-
+convert_row(_, Id, _) :-
   memberchk(Id, [15039,15052,16157,16182,16627]), !,
   debug(known_issue, "Skip buggy ID ‘~d’.", [Id]).
-convert_row(Id, L, G) :-
+convert_row(B, Id, L) :-
   % iisg:Strike
   atom_number(Local, Id),
   rdf_create_iri(resource, [strike,Local], Strike),
-  rdf_assert_triple(Strike, rdf:type, iisg:'Strike', G),
-  % dcterm:description
+  assert_instance(B, Strike, iisg:'Strike'),
+  % dct:description
   nth1(5, L, Description),
   (   Description == ''
   ->  true
-  ;   rdf_assert_triple(Strike, dcterm:description, Description-'nl-nl', G)
+  ;   assert_triple(B, Strike, dct:description, Description-'nl-nl')
   ),
   % iisg:action
   nth1(10, L, Action0),
   (   Action0 == ''
   ->  true
   ;   action_iri(Action0, Action)
-  ->  rdf_assert_triple(Strike, iisg:action, Action, G)
+  ->  assert_triple(B, Strike, iisg:action, Action)
   ;   debug(unknown_issue, "Unrecognized action ‘~a’ for ID ‘~d’.", [Action0,Id])
   ),
   % iisg:character
@@ -104,7 +103,7 @@ convert_row(Id, L, G) :-
   (   Character0 == ''
   ->  true
   ;   character_iri(Character0, Character)
-  ->  rdf_assert_triple(Strike, iisg:character, Character, G)
+  ->  assert_triple(B, Strike, iisg:character, Character)
   ;   debug(unknown_issue, "Unrecognized character ‘~a’ for ID ‘~d’.", [Character0,Id])
   ),
   % iisg:Strike iisg:company iisg:Company
@@ -120,9 +119,9 @@ convert_row(Id, L, G) :-
       atomic_list_concat(CompanyNameParts, ' ', CompanyName),
       atomic_list_concat(CompanyNameParts, -, CompanyLocal),
       rdf_create_iri(resource, [company,CompanyLocal], Company),
-      rdf_assert_triple(Company, rdf:type, iisg:'Company', G),
-      rdf_assert_triple(Company, rdfs:label, CompanyName-'nl-nl', G),
-      rdf_assert_triple(Strike, iisg:company, Company, G)
+      assert_instance(B, Company, iisg:'Company'),
+      assert_triple(B, Company, rdfs:label, CompanyName-'nl-nl'),
+      assert_triple(B, Strike, iisg:company, Company)
     )
   ),
   % iisg:date
@@ -133,47 +132,47 @@ convert_row(Id, L, G) :-
   ->  true
   ;   Day == ''
   ->  (   Month == ''
-      ->  rdf_assert_triple(Strike, iisg:date, year(Year), G)
-      ;   rdf_assert_triple(Strike, iisg:date, year_month(Year,Month), G)
+      ->  assert_triple(B, Strike, iisg:date, year(Year))
+      ;   assert_triple(B, Strike, iisg:date, year_month(Year,Month))
       )
-  ;   rdf_assert_triple(Strike, iisg:date, date(Year,Month,Day), G)
+  ;   assert_triple(B, Strike, iisg:date, date(Year,Month,Day))
   ),
   % iisg:duration
   nth1(4, L, Duration),
   (   Duration == ''
   ->  true
-  ;   rdf_assert_triple(Strike, iisg:duration, nonneg(Duration), G)
+  ;   assert_triple(B, Strike, iisg:duration, nonneg(Duration))
   ),
   % iisg:id xsd:string
   number_string(Id, Id0),
-  rdf_assert_triple(Strike, iisg:id, Id0, G),
+  assert_triple(B, Strike, iisg:id, Id0),
   % iisg:occupation
   nth1(14, L, Occupation),
   (   Occupation == ''
   ->  true
-  ;   rdf_assert_triple(Strike, iisg:occupation, Occupation-'en-gb', G)
+  ;   assert_triple(B, Strike, iisg:occupation, Occupation-'en-gb')
   ),
   % iisg:place
   nth1(13, L, PlaceString),
   split_string(PlaceString, ";", " ", PlaceComps),
-  maplist(assert_place(Strike,G), PlaceComps),
+  maplist(assert_place(B, Strike), PlaceComps),
   % iisg:result
   nth1(8, L, Result0),
   (   result_iri(Result0, Result)
-  ->  rdf_assert_triple(Strike, iisg:result, Result, G)
+  ->  assert_triple(B, Strike, iisg:result, Result)
   ;   true
   ),
   % iisg:sector
   nth1(9, L, Sector),
   (   Sector == ''
   ->  true
-  ;   rdf_assert_triple(Strike, iisg:sector, Sector-'en-gb', G)
+  ;   assert_triple(B, Strike, iisg:sector, Sector-'en-gb')
   ),
   % iisg:specification-of-action
   nth1(11, L, SpecificationOfAction),
   (   SpecificationOfAction == ''
   ->  true
-  ;   rdf_assert_triple(Strike, iisg:'specification-of-action', SpecificationOfAction-'en-gb', G)
+  ;   assert_triple(B, Strike, iisg:'specification-of-action', SpecificationOfAction-'en-gb')
   ),
   % iisg:number-of-campaigners
   % iisg:number-of-companies
@@ -187,21 +186,21 @@ convert_row(Id, L, G) :-
   % iisg:number-of-workers
   nth1(15, L, Totals),
   split_string(Totals, ";", " ", TotalComps),
-  maplist(assert_total(Strike,G), TotalComps),
+  maplist(assert_total(B, Strike), TotalComps),
   % iisg:typeOfStrike
   nth1(7, L, Type),
   (   Type == ''
   ->  true
-  ;   rdf_assert_triple(Strike, iisg:'type-of-strike', Type-'en-gb', G)
+  ;   assert_triple(B, Strike, iisg:'type-of-strike', Type-'en-gb')
   ).
 
 assert_place(_, _, "") :- !.
-assert_place(Strike, G, String) :-
+assert_place(B, Strike, String) :-
   string_phrase(province_place(Province,Place), String), !,
-  rdf_assert_triple(Strike, iisg:province, Province-'nl-nl', G),
-  rdf_assert_triple(Strike, iisg:place, Place-'nl-nl', G).
-assert_place(Strike, G, Place) :-
-  rdf_assert_triple(Strike, iisg:place, Place-'nl-nl', G).
+  assert_triple(B, Strike, iisg:province, Province-'nl-nl'),
+  assert_triple(B, Strike, iisg:place, Place-'nl-nl').
+assert_place(B, Strike, Place) :-
+  assert_triple(B, Strike, iisg:place, Place-'nl-nl').
 
 province_place(Province, Place) -->
   ...(Codes1),
@@ -224,9 +223,9 @@ result_iri('undecided', iisg:undecided).
 result_iri('victory', iisg:victory).
 
 assert_total(_, _, "") :- !.
-assert_total(Strike, G, String) :-
+assert_total(B, Strike, String) :-
   string_phrase(total(P, N), String),
-  rdf_assert_triple(Strike, P, nonneg(N), G).
+  assert_triple(B, Strike, P, nonneg(N)).
 
 total(P, N) -->
   (   "Campaigners"
@@ -271,14 +270,14 @@ export_scheme(VocabFile, ImgFile) :-
 
 transform(CsvFile, DataFile) :-
   rdf_equal(DataG, graph:data),
-  read_from_file(CsvFile, transform_stream(DataG)),
-  write_to_file(DataFile, {DataG}/[Out]>>rdf_write_quads(Out, DataG)),
+  read_from_file(CsvFile, transform_stream(mem(DataG))),
+  rdf_save_file(DataFile, [graph(DataG)]),
   delete_file(CsvFile).
 
-transform_stream(DataG, In) :-
+transform_stream(B, In) :-
   forall(
     csv_read_stream_row(In, Row),
-    convert_row(Row, DataG)
+    convert_row(B, Row)
   ).
 
 

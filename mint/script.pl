@@ -1,5 +1,7 @@
 :- encoding(utf8).
-/* Mint Authorities ETL
+:- module(script, [etl/0]).
+
+/** <module> Mint Authorities ETL
 
 @author Wouter Beek
 @see https://datasets.socialhistory.org/dataverse/lowcountries_GIS
@@ -19,6 +21,7 @@
 :- use_module(library(graph/gv)).
 :- use_module(library(http/http_client2)).
 :- use_module(library(json_ext)).
+:- use_module(library(semweb/rdf_api)).
 :- use_module(library(semweb/rdf_export)).
 :- use_module(library(semweb/rdf_mem)).
 :- use_module(library(semweb/rdf_prefix)).
@@ -47,19 +50,19 @@ etl :-
   % convert authorities
   SourceFile1 = 'authorities.geojson.gz',
   geojson_file_features(SourceFile1, Features1),
-  rdf_equal(G1, graph:authorities),
-  maplist(assert_authority(G1), Features1),
+  rdf_equal(B1, mem(graph:authorities)),
+  maplist(assert_authority(B1), Features1),
 
   % Convert houses: this _must_ be done after converting the
   % authorities.
   SourceFile2 = 'houses.geojson.gz',
   geojson_file_features(SourceFile2, Features2),
-  rdf_equal(G2, graph:house),
-  maplist(assert_house(G1, G2), Features2),
+  rdf_equal(B2, mem(graph:house)),
+  maplist(assert_house(B1, B2), Features2),
 
   % .geojson → .nq.gz
   DataFile = 'data.nq.gz',
-  write_to_file(DataFile, rdf_write_quads),
+  rdf_save_file(DataFile),
 
   % .trig → .svg
   VocabFile = 'vocab.trig',
@@ -71,61 +74,61 @@ etl :-
 
 
 
-%! assert_authority(+G:rdf_graph, +Feature:dict) is det.
+%! assert_authority(+Backend, +Feature:dict) is det.
 
-assert_authority(G1, Feature) :-
+assert_authority(B, Feature) :-
   _{properties: Properties} :< Feature,
   % iisg:Authority
   rdf_create_iri(resource, [authority,Properties.'AUTHORITY'], Authority),
-  rdf_assert_triple(Authority, rdf:type, iisg:'Authority', G1),
+  assert_instance(B, Authority, iisg:'Authority'),
   % iisg:Authority rdfs:label rdf:langString
-  rdf_assert_triple(Authority, rdfs:label, string(Properties.'AUTHORITY'), G1),
+  assert_triple(B, Authority, rdfs:label, string(Properties.'AUTHORITY')),
   % iisg:Authority geo:hasGeometry/geo:asWKT SHAPE
   _{geometry: Dict} :< Feature,
   (   Dict == null
   ->  rdf_bnode_iri(Geometry),
       debug(known_issue, "Authority without geometry: ‘~a’.", [Properties.'AUTHORITY'])
   ;   geojson_shape(Dict, Shape),
-      rdf_assert_shape(Authority, Shape, G1, Geometry)
+      assert_shape(B, Authority, Shape, Geometry)
   ),
   % geo:Geometry iisg:begin xsd:gYear
   date(Properties.'DATEfrom', Begin),
-  rdf_assert_triple(Geometry, iisg:begin, Begin, G1),
+  assert_triple(B, Geometry, iisg:begin, Begin),
   % geo:Geometry iisg:end xsd:gYear
   date(Properties.'DATEto', End),
-  rdf_assert_triple(Geometry, iisg:end, End, G1).
+  assert_triple(B, Geometry, iisg:end, End).
 
 
 
-%! assert_house(+AuthorityG:rdf_graph, +HouseG:rdf_graph, +Feature:dict) is det.
+%! assert_house(+AuthorityBackend, +HouseBackend, +Feature:dict) is det.
 
-assert_house(G1, G2, Feature) :-
+assert_house(B1, B2, Feature) :-
   _{properties: Properties} :< Feature,
   % iisg:House
   rdf_create_iri(resource, [house,Properties.'MINT'], House),
-  rdf_assert_triple(House, rdf:type, iisg:'House', G2),
+  assert_triple(B2, House, rdf:type, iisg:'House'),
   % iisg:House rdfs:label rdf:langString
-  rdf_assert_triple(House, rdfs:label, string(Properties.'MINT'), G2),
+  assert_triple(B2, House, rdfs:label, string(Properties.'MINT')),
   % iisg:House iisg:hasAuthority iisg:Authority
   rdf_create_iri(resource, [authority,Properties.'AUTHORITY'], Authority),
-  rdf_assert_triple(House, iisg:hasAuthority, Authority, G2),
+  assert_triple(B2, House, iisg:hasAuthority, Authority),
   % Some authorities only appear in the source file for houses.
-  (   rdf_triple(Authority, rdf:type, iisg:'Authority', G1)
+  (   instance(B1, Authority, iisg:'Authority')
   ->  true
-  ;   rdf_assert_triple(Authority, rdf:type, iisg:'Authority', G1),
-      rdf_assert_triple(Authority, rdfs:label, string(Properties.'AUTHORITY'), G1)
+  ;   assert_instance(B1, Authority, iisg:'Authority'),
+      assert_triple(B1, Authority, rdfs:label, string(Properties.'AUTHORITY'))
   ),
   % iisg:House iisg:alloy iisg:Alloy
   (   Properties.'ALLOY' == null
   ->  debug(known_issue, "House without alloy: ‘~a’.", [Properties.'MINT'])
   ;   rdf_create_iri(iisg, [Properties.'ALLOY'], Alloy),
-      rdf_assert_triple(House, iisg:alloy, Alloy, G2)
+      assert_triple(B2, House, iisg:alloy, Alloy)
   ),
   % iisg:House iisg:source xsd:string
   split_string(Properties.'SOURCE', ";", " ", Sources),
   forall(
     member(Source, Sources),
-    rdf_assert_triple(House, iisg:source, Source, G2)
+    assert_triple(B2, House, iisg:source, Source)
   ),
   % iisg:Authority geo:hasGeometry/geo:asWKT SHAPE
   _{geometry: Dict} :< Feature,
@@ -133,14 +136,14 @@ assert_house(G1, G2, Feature) :-
   ->  rdf_bnode_iri(Geometry),
       debug(known_issue, "House without geometry: ‘~a’.", [Properties.'AUTHORITY'])
   ;   geojson_shape(Dict, Shape),
-      rdf_assert_shape(House, Shape, G2, Geometry)
+      assert_shape(B2, House, Shape, Geometry)
   ),
   % geo:Geometry iisg:range xsd:gYear
   date(Properties.'DATEfrom', Begin),
-  rdf_assert_triple(Geometry, iisg:begin, Begin, G2),
+  assert_triple(B2, Geometry, iisg:begin, Begin),
   % geo:Geometry iisg:end xsd:gYear
   date(Properties.'DATEto', End),
-  rdf_assert_triple(Geometry, iisg:end, End, G2).
+  assert_triple(B2, Geometry, iisg:end, End).
 
 
 

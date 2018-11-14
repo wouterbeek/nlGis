@@ -34,20 +34,21 @@
 
 etl :-
   % www → .nq.gz
-  scrape,
+  rdf_equal(G, graph:data),
+  scrape(G),
   DataFile = 'data.nq.gz',
-  write_to_file(DataFile, rdf_write_quads),
+  rdf_save_file(DataFile, [graph(G)]),
   % Upload to Druid.
   upload(DataFile).
 
 
 
-%! scrape is det.
+%! scrape(+G:rdf_graph) is det.
 
-scrape :-
+scrape(G) :-
   retractall(visited(_)),
   maplist(
-    deref_province,
+    {G}/[Local]>>deref_province(Local, G),
     [
       'Groningen', 'Friesland', 'Drenthe', 'Overijssel', 'Flevoland',
       'Gelderland', 'Utrecht', 'Noord-Holland', 'Zuid-Holland', 'Zeeland',
@@ -55,31 +56,31 @@ scrape :-
     ]
   ).
 
-deref_province(Local) :-
+deref_province(Local, G) :-
   rdf_create_iri(resource, [provincie,Local], Province),
-  deref_instance(Province).
+  deref_instance(Province, G).
 
-deref_instance(S) :-
+deref_instance(S, _) :-
   visited(S), !.
-deref_instance(S) :-
+deref_instance(S, G) :-
   assert(visited(S)),
-  rdf_deref_uri(S, deref_triples, [media_type(media(application/'rdf+xml',[]))]).
+  rdf_deref_uri(S, deref_triples(G), [media_type(media(application/'rdf+xml',[]))]).
 
-deref_triples(_, Triples, _) :-
-  maplist(deref_triple, Triples).
+deref_triples(G, _, Triples, _) :-
+  maplist(deref_triple(G), Triples).
 
-deref_triple(Triple) :-
+deref_triple(G, Triple) :-
   rdf_bnode_prefix(BNodePrefix),
   rdf_clean_triple(BNodePrefix, Triple, rdf(S,P,O)),
-  deref_triple(S, P, O).
+  deref_triple(S, P, O, G).
 
 % Assert + dereference
-deref_triple(S, P, O) :-
+deref_triple(S, P, O, G) :-
   rdf_prefix_memberchk(P, [skos:broader,skos:narrower]), !,
-  rdf_assert_triple(S, P, O, graph:data),
-  deref_instance(O).
+  rdf_assert_triple(S, P, O, G),
+  deref_instance(O, G).
 % Assert
-deref_triple(S, P, O0) :-
+deref_triple(S, P, O0, G) :-
   (   O0 = literal(type(D,Lex0))
   ->  atom_strip(Lex0, Lex),
       O = literal(type(D,Lex))
@@ -88,7 +89,7 @@ deref_triple(S, P, O0) :-
       O = literal(lang(LTag,Lex))
   ;   O = O0
   ),
-  rdf_assert_triple(S, P, O, graph:data).
+  rdf_assert_triple(S, P, O, G).
 
 
 
@@ -124,4 +125,4 @@ upload(DataFile) :-
     ]
   },
   dataset_upload(druid, nlgis, gemeentegeschiedenis, Properties),
-  delete_file('data.nq.gz').
+  delete_file(DataFile).

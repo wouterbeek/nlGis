@@ -21,6 +21,7 @@
 :- use_module(library(gis/gml)).
 :- use_module(library(graph/gv)).
 :- use_module(library(http/http_client2)).
+:- use_module(library(semweb/rdf_api)).
 :- use_module(library(semweb/rdf_export)).
 :- use_module(library(semweb/rdf_mem)).
 :- use_module(library(semweb/rdf_prefix)).
@@ -45,20 +46,16 @@ etl :-
   % .zip → .dbf,.prj,.shp,.shx,.txt
   source_data_uri(Uri),
   download_shp(Uri, ShpFile),
-
   % .shp → .gml
   GmlFile = 'source.gml',
   DataFile = 'data.nq.gz',
   from_shp_to_gml(ShpFile, GmlFile),
-
   % .gml → .nq.gz
   gml_to_rdf(GmlFile, DataFile),
-
   % .trig → .svg
   VocabFile = 'vocab.trig',
   SvgFile = 'vocab.svg',
   export_schema(VocabFile, SvgFile),
-
   % Upload to Druid.
   upload([DataFile,VocabFile], [SvgFile]).
 
@@ -70,20 +67,19 @@ etl :-
 
 cshapes_record([element(_,_,Dom)]) :-
   flag(number_of_records, N, N+1),
-  (   cshapes_record_(Dom)
+  (   cshapes_record_(mem(graph:data), Dom)
   ->  true
   ;   print_message(warning, format("Failed to process record № ~D.", [N]))
   ).
 
-cshapes_record_(Dom) :-
-  rdf_equal(graph:data, G),
+cshapes_record_(B, Dom) :-
   % vocab:Country
   xpath_chk(Dom, //'ogr:CNTRY_NAME'(normalize_space), CountryName),
   atom_phrase(space_to_hyphen, CountryName, CountryLocal),
   rdf_create_iri(resource, [country,CountryLocal], Country),
-  rdf_assert_triple(Country, rdf:type, iisg:'Country', G),
+  assert_instance(B, Country, iisg:'Country'),
   % iisg:Country rdfs:label rdf:langString
-  rdf_assert_triple(Country, rdfs:label, CountryName-'en-gb', G),
+  assert_triple(B, Country, rdfs:label, CountryName-'en-gb'),
   % iisg:CountrySlice
   (   xpath_chk(Dom, //'ogr:COWSYEAR'(normalize_space), Y1),
       Y1 \== '-1'
@@ -119,84 +115,84 @@ cshapes_record_(Dom) :-
   ),
   (ground(CowStart) -> Y = Y2 ; ground(GwStart) -> Y = Y6),
   rdf_create_iri(resource, [country,CountryLocal,Y], CountrySlice),
-  rdf_assert_triple(CountrySlice, rdf:type, iisg:'CountrySlice', G),
-  rdf_assert_triple(Country, iisg:hasTemporalSlice, CountrySlice, G),
+  assert_instance(B, CountrySlice, iisg:'CountrySlice'),
+  assert_triple(B, Country, iisg:hasTemporalSlice, CountrySlice),
   % vocag:CountrySlice rdfs:label rdf:langString
   atomics_to_string([CountryName,Y], " ", Label),
-  rdf_assert_triple(CountrySlice, rdfs:label, Label-'en-gb', G),
+  assert_triple(B, CountrySlice, rdfs:label, Label-'en-gb'),
   % iisg:Capital
   xpath_chk(Dom, //'ogr:CAPNAME'(normalize_space), CapitalName),
   atom_phrase(space_to_hyphen, CapitalName, CapitalLocal),
   rdf_create_iri(resource, [capital,CapitalLocal], Capital),
-  rdf_assert_triple(Capital, rdf:type, iisg:'Capital', G),
+  assert_instance(B, Capital, iisg:'Capital'),
   % iisg:Capital geo:hasGeometry/geo:asWKT geo:wktLiteral
   xpath_chk(Dom, //'ogr:CAPLONG'(number), CapitalLong),
   xpath_chk(Dom, //'ogr:CAPLAT'(number), CapitalLat),
-  rdf_assert_shape(Capital, shape(_,_,_,'Point'([CapitalLong,CapitalLat])), G),
+  assert_shape(Capital, shape(_,_,_,'Point'([CapitalLong,CapitalLat])), G),
   % iisg:Capital rdfs:label rdf:langString
-  rdf_assert_triple(Capital, rdfs:label, CapitalName-'en-gb', G),
+  assert_triple(Capital, rdfs:label, CapitalName-'en-gb', G),
   % iisg:CountrySlice iisg:cowCode xsd:string
   (   xpath_chk(Dom, //'ogr:COWCODE'(normalize_space), CowCode),
       CowCode \== '-1'
-  ->  rdf_assert_triple(CountrySlice, iisg:cowCode, string(CowCode), G)
+  ->  assert_triple(CountrySlice, iisg:cowCode, string(CowCode), G)
   ;   true
   ),
   % iisg:CountrySlice iisg:cowStart xsd:date
   (   ground(CowStart)
-  ->  rdf_assert_triple(CountrySlice, iisg:cowStart, CowStart, G)
+  ->  assert_triple(CountrySlice, iisg:cowStart, CowStart, G)
   ;   true
   ),
   % iisg:CountrySlice iisg:cowEnd xsd:date
   (   ground(CowEnd)
-  ->  rdf_assert_triple(CountrySlice, iisg:cowEnd, CowEnd, G)
+  ->  assert_triple(CountrySlice, iisg:cowEnd, CowEnd, G)
   ;   true
   ),
   % iisg:CountrySlice iisg:gwStart xsd:date
   (   ground(GwStart)
-  ->  rdf_assert_triple(CountrySlice, iisg:gwStart, GwStart, G)
+  ->  assert_triple(CountrySlice, iisg:gwStart, GwStart, G)
   ;   true
   ),
   % iisg:CountrySlice iisg:gwEnd xsd:date
   (   ground(GwEnd)
-  ->  rdf_assert_triple(CountrySlice, iisg:gwEnd, GwEnd, G)
+  ->  assert_triple(CountrySlice, iisg:gwEnd, GwEnd, G)
   ;   true
   ),
   % iisg:CountrySlice geo:hasGeometry/geo:asWKT geo:wktLiteral
   xpath_chk(Dom, //'ogr:geometryProperty'(content), [GeoDom]),
   gml_shape(GeoDom, Shape),
-  rdf_assert_shape(CountrySlice, Shape, G),
+  assert_shape(CountrySlice, Shape, G),
   % iisg:CountrySlice iisg:area xsd:double
   xpath_chk(Dom, //'ogr:AREA'(normalize_space), AreaAtom),
   atom_number(AreaAtom, Area),
-  rdf_assert_triple(CountrySlice, iisg:area, Area, G),
+  assert_triple(CountrySlice, iisg:area, Area, G),
   % iisg:CountrySlice iisg:capital iisg:Capital
-  rdf_assert_triple(CountrySlice, iisg:capital, Capital, G),
+  assert_triple(CountrySlice, iisg:capital, Capital, G),
   % iisg:CountrySlice iisg:gwCode xsd:string
   (   xpath_chk(Dom, //'ogr:GWCODE'(normalize_space), GwCode),
       GwCode \== '-1'
-  ->  rdf_assert_triple(CountrySlice, iisg:gwCode, string(GwCode), G)
+  ->  assert_triple(CountrySlice, iisg:gwCode, string(GwCode), G)
   ;   true
   ),
   % iisg:CountrySlice iisg:isoAlpha2 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL2'(normalize_space), IsoAlpha2)
-  ->  rdf_assert_triple(CountrySlice, iisg:isoAlpha2, string(IsoAlpha2), G)
+  ->  assert_triple(CountrySlice, iisg:isoAlpha2, string(IsoAlpha2), G)
   ;   true
   ),
   % iisg:CountrySlice iisg:isoAlpha3 xsd:string
   (   xpath_chk(Dom, //'ogr:ISO1AL3'(normalize_space), IsoAlpha3)
-  ->  rdf_assert_triple(CountrySlice, iisg:isoAlpha3, string(IsoAlpha3), G)
+  ->  assert_triple(CountrySlice, iisg:isoAlpha3, string(IsoAlpha3), G)
   ;   true
   ),
   % iisg:CountrySlice iisg:isoName rdf:langString
   (   xpath_chk(Dom, //'ogr:ISONAME'(normalize_space), IsoName)
-  ->  rdf_assert_triple(CountrySlice, iisg:isoName, IsoName-'en-gb', G)
+  ->  assert_triple(CountrySlice, iisg:isoName, IsoName-'en-gb', G)
   ;   true
   ),
   % iisg:CountrySlice iisg:isoNumber xsd:positiveInteger
   (   xpath_chk(Dom, //'ogr:ISO1NUM'(normalize_space), IsoNumberAtom),
       atom_number(IsoNumberAtom, IsoNumber),
       IsoNumber > 0
-  ->  rdf_assert_triple(CountrySlice, iisg:isoNumber, positive_integer(IsoNumber), G)
+  ->  assert_triple(CountrySlice, iisg:isoNumber, positive_integer(IsoNumber), G)
   ;   true
   ).
 

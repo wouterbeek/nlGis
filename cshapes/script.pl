@@ -1,5 +1,7 @@
 :- encoding(utf8).
-/* CShapes ETL script
+:- module(script, [run/0]).
+
+/** <module> CShapes ETL
 
 @author Wouter Beek
 @see http://downloads.weidmann.ws/cshapes/Shapefiles/

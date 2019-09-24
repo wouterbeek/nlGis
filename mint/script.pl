@@ -86,7 +86,7 @@ assert_authority(B, Feature) :-
   % iisg:Authority geo:hasGeometry/geo:asWKT SHAPE
   _{geometry: Dict} :< Feature,
   (   Dict == null
-  ->  rdf_bnode_iri(Geometry),
+  ->  well_known_iri(Geometry),
       debug(known_issue, "Authority without geometry: ‘~a’.", [Properties.'AUTHORITY'])
   ;   geojson_shape(Dict, Shape),
       assert_shape(B, Authority, Shape, Geometry)
@@ -133,7 +133,7 @@ assert_house(B1, B2, Feature) :-
   % iisg:Authority geo:hasGeometry/geo:asWKT SHAPE
   _{geometry: Dict} :< Feature,
   (   Dict == null
-  ->  rdf_bnode_iri(Geometry),
+  ->  well_known_iri(Geometry),
       debug(known_issue, "House without geometry: ‘~a’.", [Properties.'AUTHORITY'])
   ;   geojson_shape(Dict, Shape),
       assert_shape(B2, House, Shape, Geometry)

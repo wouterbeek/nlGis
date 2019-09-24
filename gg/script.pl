@@ -1,4 +1,6 @@
-/* Gemeentegeschiedenis scrape
+:- module(gemeentegeschiedenis, [run/0]).
+
+/** <module> Gemeentegeschiedenis ETL
 
 @author Wouter Beek
 @version 2017-2018
@@ -10,19 +12,19 @@
 :- use_module(library(atom_ext)).
 :- use_module(library(file_ext)).
 :- use_module(library(http/http_client2)).
+:- use_module(library(semweb/rdf_api)).
 :- use_module(library(semweb/rdf_clean)).
 :- use_module(library(semweb/rdf_deref)).
 :- use_module(library(semweb/rdf_export)).
 :- use_module(library(semweb/rdf_mem)).
 :- use_module(library(semweb/rdf_prefix)).
 :- use_module(library(semweb/rdf_term)).
-:- use_module(library(tapir/tapir_api)).
 
 :- curl.
 
 :- maplist(rdf_register_prefix, [
-     graph-'http://www.gemeentegeschiedenis.nl/graph/',
-     resource-'http://www.gemeentegeschiedenis.nl/',
+     graph-'https://www.gemeentegeschiedenis.nl/graph/',
+     resource-'https://www.gemeentegeschiedenis.nl/',
      skos
    ]).
 
@@ -32,55 +34,60 @@
 :- thread_local
      visited/1.
 
-etl :-
+run :-
   % www → .nq.gz
   rdf_equal(G, graph:data),
-  scrape(G),
-  DataFile = 'data.nq.gz',
-  rdf_save_file(DataFile, [graph(G)]),
-  % Upload to Druid.
-  upload(DataFile).
+  scrape(mem(G)),
+  rdf_save_file('data.nq.gz', [graph(G)]).
 
-
-
-%! scrape(+G:rdf_graph) is det.
-
-scrape(G) :-
+scrape(B) :-
   retractall(visited(_)),
   maplist(
-    {G}/[Local]>>deref_province(Local, G),
+    deref_province(B),
     [
-      'Groningen', 'Friesland', 'Drenthe', 'Overijssel', 'Flevoland',
-      'Gelderland', 'Utrecht', 'Noord-Holland', 'Zuid-Holland', 'Zeeland',
-      'Noord-Brabant', 'Limburg'
+      'Groningen',
+      'Friesland',
+      'Drenthe',
+      'Overijssel',
+      'Flevoland',
+      'Gelderland',
+      'Utrecht',
+      'Noord-Holland',
+      'Zuid-Holland',
+      'Zeeland',
+      'Noord-Brabant',
+      'Limburg'
     ]
   ).
 
-deref_province(Local, G) :-
-  rdf_create_iri(resource, [provincie,Local], Province),
-  deref_instance(Province, G).
+deref_province(B, Local) :-
+  rdf_prefix_iri(resource, [provincie,Local], S),
+  deref_instance(B, S).
 
-deref_instance(S, _) :-
+deref_instance(_, S) :-
   visited(S), !.
-deref_instance(S, G) :-
+deref_instance(B, S) :-
   assert(visited(S)),
-  rdf_deref_uri(S, deref_triples(G), [media_type(media(application/'rdf+xml',[]))]).
+  rdf_deref_uri(
+    S,
+    deref_triples(B),
+    [media_type(media(application/'rdf+xml',[]))]
+  ).
 
-deref_triples(G, _, Triples, _) :-
-  maplist(deref_triple(G), Triples).
+deref_triples(B, _, Triples, _) :-
+  maplist(deref_triple(B), Triples).
 
-deref_triple(G, Triple) :-
-  rdf_bnode_prefix(BNodePrefix),
-  rdf_clean_triple(BNodePrefix, Triple, rdf(S,P,O)),
-  deref_triple(S, P, O, G).
+deref_triple(B, Triple) :-
+  rdf_clean_triple('https://www.gemeentegeschiedenis.nl', Triple, tp(S,P,O)),
+  deref_triple(B, S, P, O).
 
 % Assert + dereference
-deref_triple(S, P, O, G) :-
+deref_triple(B, S, P, O) :-
   rdf_prefix_memberchk(P, [skos:broader,skos:narrower]), !,
-  rdf_assert_triple(S, P, O, G),
-  deref_instance(O, G).
+  assert_triple(B, S, P, O),
+  deref_instance(B, O).
 % Assert
-deref_triple(S, P, O0, G) :-
+deref_triple(B, S, P, O0) :-
   (   O0 = literal(type(D,Lex0))
   ->  atom_strip(Lex0, Lex),
       O = literal(type(D,Lex))
@@ -89,12 +96,9 @@ deref_triple(S, P, O0, G) :-
       O = literal(lang(LTag,Lex))
   ;   O = O0
   ),
-  rdf_assert_triple(S, P, O, G).
+  assert_triple(B, S, P, O).
 
-
-
-%! upload(+DataFile:atom) is det.
-
+/*
 upload(DataFile) :-
   rdf_bnode_prefix(BNodePrefix),
   Properties = _{
@@ -126,3 +130,4 @@ upload(DataFile) :-
   },
   dataset_upload(druid, nlgis, gemeentegeschiedenis, Properties),
   delete_file(DataFile).
+*/

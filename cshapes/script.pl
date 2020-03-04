@@ -282,7 +282,8 @@ assert_iso(Dom, Name, Geometry, Country, Dataset) :-
 assert_iso(_, _, _, _, _).
 
 assert_observation(Alias, GeometryCode, CountryCode, Attribution, Country, Interval, Geometry, Dataset) :-
-  rdf_prefix_iri(Alias, [GeometryCode,CountryCode], Observation),
+  atomic_list_concat([GeometryCode,CountryCode], -, Local),
+  rdf_prefix_iri(Alias, Local, Observation),
   % a qb:Observation
   assert_instance(Observation, qb:'Observation', Dataset),
   % dimension:attribution rdfs:Resource

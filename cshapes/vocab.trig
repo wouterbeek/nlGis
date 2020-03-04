@@ -14,11 +14,16 @@ prefix qb: <http://purl.org/linked-data/cube#>
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sdmx-dimension: <http://purl.org/linked-data/sdmx/2009/dimension#>
+prefix sdmx-measure: <http://purl.org/linked-data/sdmx/2009/measure#>
 prefix sdo: <http://schema.org/>
 prefix sh: <http://www.w3.org/ns/shacl#>
 prefix time: <http://www.w3.org/2006/time#>
 prefix void: <http://rdfs.org/ns/void#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Default graph
+
+## Dataset
 
 dataset:cshapes a void:Dataset;
   dct:created "2016-11-30"^^xsd:date;
@@ -32,17 +37,38 @@ dataset:cshapes a void:Dataset;
     graph:data,
     graph:vocab.
 
+## Data graph
+
+graph:data a qb:Dataset;
+  rdfs:comment "Instance data for the Linked Data version of the CShapes dataset."@en;
+  rdfs:label "data graph"@en.
+
+## Vocabulary graph
+
+graph:vocab a owl:Ontology;
+  qb:component
+    [ qb:dimension dimension:attribution ],
+    [ qb:dimension dimension:country ],
+    [ qb:dimension dimension:temporalExtent ],
+    [ qb:measure measure:spatialExtent ];
+  rdfs:comment "Vocabulary for the Linked Data version of the CShapes dataset."@en;
+  rdfs:label "vocabulary graph"@en.
+
+# Named graphs
+
+## Vocabulary graph
+
 graph:vocab {
+  # Classes
+
+  ## CoW classes
+
   cow:Country
     rdfs:comment "Country according to the Correlates of War."@en;
     rdfs:label "country"@en;
     rdfs:subClassOf cshapes:Country.
 
-  cow:number
-    rdfs:comment "Correlates of War numeric identifier code."@en;
-    rdfs:domain cow:Country;
-    rdfs:label "has code"@en;
-    rdfs:range xsd:positiveInteger.
+  ## CShapes classes
 
   cshapes:Capital
     rdfs:label "The capital city of a country."@en;
@@ -77,6 +103,32 @@ graph:vocab {
         sh:path geo:asWKT ];
     sh:targetClass cshapes:Geometry.
 
+  ## G&W classes
+
+  gw:Country
+    rdfs:comment "Country according to Gleditsch & Ward."@en;
+    rdfs:label "country"@en;
+    rdfs:subClassOf cshapes:Country.
+
+  ## ISO classes
+
+  iso:Country
+    rdfs:comment "Country according to ISO."@en;
+    rdfs:label "country"@en;
+    rdfs:subClassOf cshapes:Country.
+
+  # Properties
+
+  ## CoW properties
+
+  cow:number
+    rdfs:comment "Correlates of War numeric identifier code."@en;
+    rdfs:domain cow:Country;
+    rdfs:label "has code"@en;
+    rdfs:range xsd:positiveInteger.
+
+  ## CShapes properties
+
   cshapes:area
     rdfs:comment "The quantification of the polygon area in square kilometers, computed using an Eckert VI projection."@en;
     rdfs:domain cshapes:Geometry;
@@ -90,34 +142,7 @@ graph:vocab {
     rdfs:label "has capital"@en;
     rdfs:range cshapes:Capital.
 
-  dimension:attribution a qb:DimensionProperty;
-    rdfs:label "is attributed to"@en.
-
-  dimension:country a qb:DimensionProperty;
-    rdfs:label "has country"@en;
-    rdfs:range cshapes:Country.
-
-  dimension:temporalExtent a qb:DimensionProperty;
-    rdfs:label "has temporal extent"@en;
-    rdfs:range time:PropertInterval;
-    rdfs:subPropertyOf sdmx-dimension:timePeriod.
-
-  graph:data a qb:Dataset;
-    rdfs:label "CShapes instance data"@en.
-
-  graph:vocab a owl:Ontology, qb:DataStructureDefinition;
-    qb:component
-      [ qb:dimension dimension:attribution ],
-      [ qb:dimension dimension:country ],
-      [ qb:dimension dimension:temporalExtent ],
-      [ qb:measure measure:spatialExtent ];
-    rdfs:comment "Vocabulary for the Linked Data version of the CShapes dataset."@en;
-    rdfs:label "CShapes vocabulary"@en.
-
-  gw:Country
-    rdfs:comment "Country according to Gleditsch & Ward."@en;
-    rdfs:label "country"@en;
-    rdfs:subClassOf cshapes:Country.
+  ## G&W properties
 
   gw:number
     rdfs:comment "Gleditsch & Ward (1999) numeric identifier code for countries."@en;
@@ -125,10 +150,7 @@ graph:vocab {
     rdfs:label "has code"@en;
     rdfs:range xsd:positiveInteger.
 
-  iso:Country
-    rdfs:comment "Country according to ISO."@en;
-    rdfs:label "country"@en;
-    rdfs:subClassOf cshapes:Country.
+  ## ISO properties
 
   iso:alpha2
     rdfs:comment "ISO 3166-1 Alpha2 two-character country code."@en;
@@ -154,7 +176,37 @@ graph:vocab {
     rdfs:label "has number"@en;
     rdfs:range xsd:positiveInteger.
 
+  # DataCube
+
+  graph:vocab a qb:DataStructureDefinition;
+    qb:component
+      [ qb:dimension dimension:attribution ],
+      [ qb:dimension dimension:country ],
+      [ qb:dimension dimension:temporalExtent ],
+      [ qb:measure measure:spatialExtent ].
+
+  ## Dimensions
+
+  dimension:attribution a qb:DimensionProperty;
+    rdfs:domain qb:Observation;
+    rdfs:label "is attributed to"@en.
+
+  dimension:country a qb:DimensionProperty;
+    rdfs:domain qb:Observation;
+    rdfs:label "has country"@en;
+    rdfs:range cshapes:Country.
+
+  dimension:temporalExtent a qb:DimensionProperty;
+    rdfs:domain qb:Observation;
+    rdfs:label "has temporal extent"@en;
+    rdfs:range time:PropertInterval;
+    rdfs:subPropertyOf sdmx-dimension:timePeriod.
+
+  ## Measures
+
   measure:spatialExtent a qb:MeasureProperty;
+    rdfs:domain qb:Observation;
     rdfs:label "has spatial extent"@en;
-    rdfs:range cshapes:Geometry.
+    rdfs:range cshapes:Geometry;
+    rdfs:subPropertyOf sdmx-measure:obsValue.
 }

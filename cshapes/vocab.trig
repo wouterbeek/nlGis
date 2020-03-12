@@ -46,11 +46,6 @@ graph:data a qb:Dataset;
 ## Vocabulary graph
 
 graph:vocab a owl:Ontology;
-  qb:component
-    [ qb:dimension dimension:attribution ],
-    [ qb:dimension dimension:country ],
-    [ qb:dimension dimension:temporalExtent ],
-    [ qb:measure measure:spatialExtent ];
   rdfs:comment "Vocabulary for the Linked Data version of the CShapes dataset."@en;
   rdfs:label "vocabulary graph"@en.
 

@@ -43,7 +43,7 @@
      'cow-country'-'https://iisg.amsterdam/resource/cow/country/',
      'cow-observation'-'https://iisg.amsterdam/resource/cow/observation/',
      cshapes-'https://iisg.amsterdam/vocab/cshapes/',
-     capital-'https://iisg.amsterdam/resource/cshapes/geometry/',
+     capital-'https://iisg.amsterdam/resource/cshapes/capital/',
      dimension-'https://iisg.amsterdam/resource/cshapes/dimension/',
      geometry-'https://iisg.amsterdam/resource/cshapes/geometry/',
      graph-'https://iisg.amsterdam/resource/cshapes/graph/',
@@ -115,20 +115,22 @@ assert_cshape(Dom, Dataset) :-
   % Link countries to their capital.
   assert_capital(Dom, Country1, Country2, Country3, Dataset).
 
-space_to_hyphen, "-" --> " ", !, space_to_hyphen.
-space_to_hyphen, [C] --> [C], !, space_to_hyphen.
-space_to_hyphen --> "".
+make_local_name, "-" --> " ", !, make_local_name.
+make_local_name, [C2] --> [C1], !, {to_lower(C1, C2)}, make_local_name.
+make_local_name --> "".
 
 assert_capital(Dom, Country1, Country2, Country3, Dataset) :-
   % Capital: identified by its name.
   xpath_chk(Dom, //'ogr:CAPNAME'(normalize_space), Name),
-  atom_phrase(space_to_hyphen, Name, Local),
+  atom_phrase(make_local_name, Name, Local),
   rdf_create_iri(capital, [Local], Capital),
   assert_instance(Capital, cshapes:'Capital', Dataset),
   % geo:hasGeometry/geo:asWKT geo:wktLiteral
   xpath_chk(Dom, //'ogr:CAPLONG'(number), CapitalLong),
   xpath_chk(Dom, //'ogr:CAPLAT'(number), CapitalLat),
-  assert_geometry(shape(_,_,_,'Point'([CapitalLong,CapitalLat])), Capital, Dataset),
+  rdf_create_iri(geometry, [Local], Geometry),
+  assert_geometry(shape(_,_,_,'Point'([CapitalLong,CapitalLat])), Geometry, Dataset),
+  assert_triple(Capital, geo:hasGeometry, Geometry, Dataset),
   % rdfs:label rdf:langString
   assert_label(Capital, Name-[en], Dataset),
   % cshapes:capital cshapes:Capital
